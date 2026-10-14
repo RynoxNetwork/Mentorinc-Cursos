@@ -2368,7 +2368,7 @@ form > .action {
   }
   .profile-menu {
     right: 14px;
-    width: calc(100vw - 28px);
+    width: calc(100% - 28px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
