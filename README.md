@@ -2,6 +2,8 @@
 
 Aplicación de Mentorinc con la dirección visual **Impulso**, aprobada por Jose Maria. Frontend funcional en React, TypeScript y Vite, con identidad, logo e ilustraciones propias del proyecto.
 
+**Demo publicada:** [mentorinc-impulso.pages.dev](https://mentorinc-impulso.pages.dev/). Publicación estática manual; los datos se guardan únicamente en el navegador de cada visitante.
+
 ## Ejecutar
 
 Requiere Node.js 22.12 o superior; desarrollada con Node 24.18.0.

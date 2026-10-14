@@ -31,7 +31,23 @@ Se mantiene el historial inicial de `RynoxNetwork/Mentorinc-Cursos` y su rama `m
 - El menú de perfil se corrigió en el ancho mínimo: límites x=14..291 dentro del contenido de 305 px. Navegación móvil y selección de perfiles comprobadas.
 - Sin errores de consola en los recorridos de actividad y agenda comprobados.
 
-La comprobación pública se registra después del despliegue. No se presentan estas pruebas como evidencia de cobros, correo real, autorización de servidor o funcionamiento multiusuario.
+No se presentan estas pruebas como evidencia de cobros, correo real, autorización de servidor o funcionamiento multiusuario.
+
+## Publicación verificada
+
+- URL principal: <https://mentorinc-impulso.pages.dev/>.
+- Versión de aplicación: commit `2a93e66`, posterior a la implementación `0639ab3`, ambos subidos a `main`.
+- Cloudflare Pages, proyecto `mentorinc-impulso`, carga estática directa. Despliegue `cb169d3d-2c09-4103-a54a-53ae22f3dc26`, estado **success**, 14 de octubre de 2026 a las 08:36 (Lima).
+- URL de esa versión: <https://cb169d3d.mentorinc-impulso.pages.dev/>.
+- ZIP: 16 entradas (14 archivos públicos y las reglas `_headers` / `_redirects`), integridad y correspondencia con `dist/` verificadas. SHA-256: `0df31218362021fb31d9443a5c586d8d0f79c953f4afc867799c4ad981084392`.
+- Los 14 archivos descargados desde la URL pública coinciden por SHA-256 con el build local. La ruta directa `/leccion/com-2` responde con el mismo HTML de entrada; la redirección canónica de `/index.html` se siguió en la comprobación.
+- Respuesta HTTP 200, CSP, `X-Content-Type-Options: nosniff` y `X-Frame-Options: DENY` confirmados públicamente.
+- Navegador público: completar lección → recargar su URL directa → estado completado persistido → inicio con progreso 33%. Sin errores ni advertencias de consola en este recorrido.
+- Inicio público a 390 px: scrollWidth y ancho de contenido 375 px, sin desbordamiento. Menú de cuenta abre y Escape lo cierra; se retiró la emulación al terminar.
+
+El proyecto no tiene integración Git automática: el conector existente de Cloudflare no mostraba este repositorio. Se publicó el paquete estático autorizado sin ampliar permisos del conector. Un `git push` conserva el código, pero no cambia por sí solo la demo. Para actualizarla, compilar y subir el contenido de `dist/` al mismo proyecto; conservar el ZIP anterior para volver a esa versión si fuera necesario.
+
+Las capturas de escritorio y móvil y el manifiesto de comprobación quedan en la carpeta local de entrega; no contienen datos reales de alumnos. El commit posterior de documentación no cambia los archivos desplegados.
 
 ## Pendientes de contenido y etapa posterior
 
