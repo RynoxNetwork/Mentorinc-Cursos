@@ -48,3 +48,11 @@ La copia local es un respaldo de demostración, no una fuente de autenticidad. N
 6. Recorrer alta → pago → aprobación → aprendizaje → revisión → sesión → cierre → reporte con cuentas de prueba. Capacitar al equipo, registrar aceptación y autorizar publicación operativa.
 
 Hasta completar esta etapa la publicación en Cloudflare es una demostración local por visitante. No existe operación multiusuario real.
+
+## Continuidad y recordatorios preparados
+
+La selección de lecciones de una inscripción se conserva aunque después se archive contenido del catálogo. El servidor deberá aplicar la misma separación entre publicación y derecho de acceso, además de la vigencia. No calcular requisitos de cierre usando solamente el catálogo actualmente publicado.
+
+`src/reminders.ts` prepara avisos de reuniones para alumno y mentor y evita repetir una simulación por reserva, revisión de horario y destinatario. La cola se deriva de reservas futuras confirmadas y del acceso vigente; la reprogramación incrementa su revisión y la cancelación la retira. El historial local conserva texto, destinatario, momento previsto y momento simulado. No prueba ninguna entrega de correo real.
+
+Al integrar, reemplazar el disparo manual por tareas persistentes en servidor, usar el reloj del servidor y volver a comprobar reserva, revisión, acceso y destinatarios inmediatamente antes de emitir. Mantener idempotencia, cancelación, reintentos y estados del proveedor con auditoría. El aviso de pago al negocio debe proceder del resultado auténtico validado, dirigido a responsables autorizados; los botones de pago de prueba desaparecen de la operación real.

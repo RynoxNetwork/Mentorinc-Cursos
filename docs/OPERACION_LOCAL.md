@@ -26,6 +26,9 @@ Versión funcional del 14 de octubre de 2026. Los cambios de administración afe
 
 - Una compra guarda la selección de lecciones, precio, cupos, duración, vigencia y requisito de revisión. Editar un programa afecta inscripciones nuevas. El contenido editorial de una lección sigue siendo editable; no se promete un archivo inmutable de todos sus textos.
 - La vigencia empieza al aprobar el acceso. Se excluyen accesos vencidos y no se ofrece una sesión que termine después del vencimiento. Reembolsar retira el acceso.
+- Archivar módulos o lecciones los retira del catálogo para nuevas inscripciones. Los alumnos ya inscritos conservan las lecciones de su temario, su acceso mientras esté vigente y los mismos requisitos de cierre. El archivo no aumenta su porcentaje de avance. Las copias antiguas sin temario lo fijan antes de aplicar cambios editoriales.
+- «Acceso vencido» se muestra también en compras y administración, con opciones para consultar el historial, elegir programa o pedir ayuda. Las pantallas de compra refrescan la vigencia cada 30 segundos y al recuperar el foco; las acciones comprueban la hora actual.
+- Confirmar un pago simulado avisa al alumno y a todos los administradores activos en esta copia. El aviso del negocio enlaza con Compras y accesos. Repetir el mismo resultado no duplica avisos ni correos de prueba; la aprobación sigue siendo independiente.
 - La nueva inscripción archiva progreso, medición inicial/final y satisfacción anteriores; las entregas, casos, intentos y reservas siguen vinculados a su compra. Los reportes de comparación agregan el recorrido actual. La página Mi avance muestra los recorridos archivados.
 - La activación del aprendizaje cuenta alumnos con acceso vigente que completaron al menos una lección. No equivale a una cuenta registrada o a una compra aprobada. La fecha se registra desde esta versión; no se inventa para progreso histórico.
 - Puntos: 10 por lección completada y 20 por caso distinto en el recorrido actual. Las insignias son reconocimiento interno, no certificados.
@@ -38,3 +41,13 @@ Versión funcional del 14 de octubre de 2026. Los cambios de administración afe
 Material académico final y permisos de uso; temarios/reglas/precios definitivos; textos y aprobación de políticas; identidad y disponibilidad del equipo; dominio; proveedores; capacitación y aceptación de entrega. El panel hace visibles estos pendientes. Completar formularios locales no ejecuta esas acciones externas.
 
 Ver también [conexión futura](CONEXION_BACKEND.md) y [capacitación](GUIA_Y_CAPACITACION.md).
+
+## Recordatorios locales de mentoría
+
+Entrar desde Agenda → Recordatorios, Notificaciones o el enlace de Operación. Administración configura la anticipación (1, 2, 12, 24 o 48 horas; 24 por defecto) y puede pausar la preparación. Alumno y mentor son los destinatarios; el alumno ve únicamente su mensaje, el mentor sus sesiones asignadas y administración el conjunto.
+
+La vista muestra hora de sesión, momento previsto, destinatarios y texto del mensaje. Incluye el enlace de reunión cuando existe y avisa cuando todavía falta. «Simular por adelantado» permite probar una sesión concreta; «Simular avisos que ya corresponden» solo procesa los avisos pendientes cuyo momento ha llegado. Cada simulación crea notificación y correo de prueba, nunca un envío externo. La vista se refresca, pero no hay un proceso de envío automático: se requiere pulsar el botón y la página no ejecuta nada estando cerrada.
+
+Una reserva cancelada desaparece de la cola. Reprogramar cambia el momento previsto y permite un aviso del nuevo horario; los mensajes anteriores se conservan identificados como «Sin efecto», también en Notificaciones y Correo de prueba. La regla no duplica mensajes ya simulados del mismo horario y destinatario. No se ofrecen recordatorios de sesiones pasadas, de personas inactivas o sin acceso vigente que cubra la sesión.
+
+Configuración e historial se incluyen en la exportación/importación local. El envío automático real y su supervisión quedan para la etapa de backend/correo.
