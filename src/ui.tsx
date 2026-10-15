@@ -1,5 +1,7 @@
 import {
   useId,
+  useEffect,
+  useState,
   type ReactNode,
   type InputHTMLAttributes,
   type TextareaHTMLAttributes,
@@ -8,7 +10,21 @@ import {
 import { Link } from 'react-router-dom';
 import { ArrowRight, LockKeyhole } from 'lucide-react';
 import { useStore } from './store';
-import { activeAccess } from './model';
+import { activeAccess, learningPurchase, purchaseAccessState } from './model';
+
+export function useLocalClock() {
+  const [time, setTime] = useState(Date.now());
+  useEffect(() => {
+    const refresh = () => setTime(Date.now());
+    const timer = window.setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+    };
+  }, []);
+  return time;
+}
 
 export function Heading({
   title,
@@ -118,6 +134,9 @@ export function Avatar({ name }: { name: string }) {
 }
 export function Access({ children }: { children: ReactNode }) {
   const { state, user } = useStore();
+  const time = useLocalClock();
+  const purchase = user && learningPurchase(state, user.id);
+  const expired = purchase && purchaseAccessState(purchase, time) === 'vencido';
   if (!user)
     return (
       <Empty
@@ -145,9 +164,11 @@ export function Access({ children }: { children: ReactNode }) {
     return (
       <div className="empty">
         <LockKeyhole size={32} />
-        <h2>Tu aula te está esperando</h2>
+        <h2>{expired ? 'Tu acceso ha vencido' : 'Tu aula te está esperando'}</h2>
         <p>
-          El acceso se habilita cuando el pago está confirmado y Mentorinc aprueba tu solicitud.
+          {expired
+            ? 'Conservas tu avance y tu historial. Revisa tu compra o consulta cómo continuar con Mentorinc.'
+            : 'El acceso se habilita cuando el pago está confirmado y Mentorinc aprueba tu solicitud.'}
         </p>
         <ButtonLink to="/compras">Revisar mi acceso</ButtonLink>
         <Link to="/soporte">Solicitar ayuda con el acceso</Link>

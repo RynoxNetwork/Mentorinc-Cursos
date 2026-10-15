@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ReminderSettings, ReminderDelivery } from './reminders-model';
 import {
   Policy,
   Consent,
@@ -165,6 +166,7 @@ export const Booking = z.object({
   status: z.enum(['confirmada', 'cancelada', 'realizada']),
   topic: z.string(),
   meeting: z.string(),
+  reminderVersion: z.number().int().nonnegative().optional(),
 });
 export const Thread = z.object({
   id: z.string(),
@@ -216,6 +218,8 @@ export const State = z.object({
   caseAttempts: z.array(CaseAttempt).default([]),
   quizAttempts: z.array(QuizAttempt).default([]),
   delivery: DeliverySettings.default(defaultDelivery),
+  reminderSettings: ReminderSettings.default({ enabled: true, hoursBefore: 24 }),
+  reminderDeliveries: z.array(ReminderDelivery).default([]),
 });
 export type AppState = z.infer<typeof State>;
 export type Person = z.infer<typeof User>;
@@ -300,7 +304,13 @@ export function parseStoredState(raw: unknown): AppState {
       })),
     });
   }
-  return State.parse(raw);
+  return preserveEnrollmentLessons(State.parse(raw));
+}
+// Older local copies may lack a curriculum snapshot. Freeze their existing scope before edits.
+export function preserveEnrollmentLessons(s: AppState) {
+  const ids = visibleLessons(s).map((l) => l.id);
+  s.purchases.forEach((p) => (p.lessonIds ??= [...ids]));
+  return s;
 }
 export const uid = () => crypto.randomUUID();
 export const now = () => new Date().toISOString();
@@ -312,14 +322,24 @@ export function safeUrl(value: string) {
     return false;
   }
 }
+export function purchaseAccessState(p: AppState['purchases'][number], at = Date.now()) {
+  if (p.payment === 'reembolsado') return 'reembolsado';
+  if (p.approval === 'rechazado') return 'rechazado';
+  if (p.payment !== 'confirmado') return 'pendiente_pago';
+  if (p.approval !== 'aprobado') return 'pendiente_aprobacion';
+  if (p.expiresAt && !(Date.parse(p.expiresAt) > at)) return 'vencido';
+  return 'vigente';
+}
+export const accessLabels = {
+  vigente: 'Acceso habilitado',
+  vencido: 'Acceso vencido',
+  pendiente_pago: 'Pago pendiente',
+  pendiente_aprobacion: 'Aprobación pendiente',
+  rechazado: 'Acceso no habilitado',
+  reembolsado: 'Compra reembolsada',
+};
 export function activeAccess(s: AppState, userId: string) {
-  return s.purchases.find(
-    (p) =>
-      p.userId === userId &&
-      p.payment === 'confirmado' &&
-      p.approval === 'aprobado' &&
-      (!p.expiresAt || Date.parse(p.expiresAt) > Date.now()),
-  );
+  return s.purchases.find((p) => p.userId === userId && purchaseAccessState(p) === 'vigente');
 }
 export function programLessons(s: AppState, programId: string) {
   const program = s.programs.find((p) => p.id === programId);
@@ -334,19 +354,21 @@ export function learningPurchase(s: AppState, userId: string) {
   );
 }
 export function visibleLessons(s: AppState, userId?: string) {
+  const ids = userId ? learningPurchase(s, userId)?.lessonIds : undefined;
   return s.modules
-    .filter((m) => !m.archived)
+    .filter((m) => ids !== undefined || !m.archived)
     .sort((a, b) => a.order - b.order)
-    .flatMap((m) => s.lessons.filter((l) => l.moduleId === m.id && l.published))
-    .filter((l) => {
-      const p = userId ? learningPurchase(s, userId) : undefined;
-      return !p || !p.lessonIds || p.lessonIds.includes(l.id);
-    });
+    .flatMap((m) =>
+      s.lessons.filter((l) => l.moduleId === m.id && (ids ? ids.includes(l.id) : l.published)),
+    );
+}
+export function requiredLessonIds(s: AppState, userId: string) {
+  return learningPurchase(s, userId)?.lessonIds ?? visibleLessons(s, userId).map((l) => l.id);
 }
 export function progress(s: AppState, u: Person) {
-  const lessons = visibleLessons(s, u.id);
-  return lessons.length
-    ? Math.round((100 * lessons.filter((l) => u.completed.includes(l.id)).length) / lessons.length)
+  const ids = requiredLessonIds(s, u.id);
+  return ids.length
+    ? Math.round((100 * ids.filter((id) => u.completed.includes(id)).length) / ids.length)
     : 0;
 }
 export function suggestedFocus(s: AppState, u: Person) {

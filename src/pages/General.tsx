@@ -13,6 +13,8 @@ import {
 import { useStore } from '../store';
 import {
   activeAccess,
+  purchaseAccessState,
+  accessLabels,
   progress,
   visibleLessons,
   programLessons,
@@ -20,7 +22,19 @@ import {
   dateLabel,
   STORE_KEY,
 } from '../model';
-import { Heading, ButtonLink, Badge, Field, Area, Empty, Avatar, download, getText } from '../ui';
+import {
+  Heading,
+  ButtonLink,
+  Badge,
+  Field,
+  Area,
+  Empty,
+  Avatar,
+  download,
+  getText,
+  useLocalClock,
+} from '../ui';
+import { deliveryIsCurrent } from '../reminders';
 
 export function Home() {
   const { state, user } = useStore();
@@ -438,6 +452,14 @@ export function Mailbox() {
             <article className="mail-item" key={m.id}>
               <Badge>{m.kind === 'notice' ? 'Notificación' : 'Acceso local'}</Badge>
               <h2>{m.subject}</h2>
+              {state.reminderDeliveries.some(
+                (d) => d.mailId === m.id && !deliveryIsCurrent(state, d),
+              ) && (
+                <p className="notice warning">
+                  Recordatorio sin efecto. La sesión fue cancelada o reprogramada; consulta la
+                  agenda actual.
+                </p>
+              )}
               <p className="soft">Para: {state.users.find((u) => u.id === m.userId)?.email}</p>
               <p>{m.body}</p>
               {m.kind !== 'notice' &&
@@ -525,6 +547,7 @@ export function Account() {
 
 export function Purchases() {
   const { state, user, run } = useStore();
+  const time = useLocalClock();
   const purchases = state.purchases.filter((p) => p.userId === user?.id);
   return (
     <>
@@ -559,15 +582,17 @@ export function Purchases() {
               <span className={p.payment === 'confirmado' ? 'done' : ''}>
                 <CheckCircle2 /> Pago {p.payment}
               </span>
-              <span className={p.approval === 'aprobado' ? 'done' : ''}>
-                <CheckCircle2 /> Acceso {p.approval}
+              <span className={purchaseAccessState(p, time) === 'vigente' ? 'done' : ''}>
+                <CheckCircle2 /> {accessLabels[purchaseAccessState(p, time)]}
               </span>
             </div>
             <p>
               {p.sessions} sesiones de {p.minutes} minutos · Aula y acompañamiento
               {p.expiresAt
                 ? ` · Acceso hasta ${dateLabel(p.expiresAt)}`
-                : ' · Sin vencimiento configurado'}
+                : p.accessDays
+                  ? ` · Vigencia de ${p.accessDays} días desde la aprobación`
+                  : ' · Sin vencimiento configurado'}
             </p>
             {p.approval === 'pendiente' &&
             p.payment !== 'confirmado' &&
@@ -605,7 +630,23 @@ export function Purchases() {
                 Tu pago de prueba está confirmado. El equipo Mentorinc revisará tu solicitud antes
                 de habilitar el acceso.
               </div>
-            ) : p.approval === 'aprobado' && p.payment === 'confirmado' ? (
+            ) : purchaseAccessState(p, time) === 'vencido' ? (
+              <div className="notice warning">
+                <div>
+                  <strong>Tu acceso ha vencido</strong>
+                  <p>
+                    Tu avance e historial se conservan. Elige otro programa o solicita ayuda para
+                    continuar.
+                  </p>
+                  <div className="actions">
+                    <ButtonLink to="/programas" secondary>
+                      Ver programas
+                    </ButtonLink>
+                    <Link to="/resultados">Consultar mi historial</Link>
+                  </div>
+                </div>
+              </div>
+            ) : purchaseAccessState(p, time) === 'vigente' ? (
               <div className="actions">
                 <Badge tone="good">Acceso habilitado</Badge>
                 <ButtonLink to="/ruta">Entrar al aula</ButtonLink>
@@ -643,6 +684,9 @@ export function Notices() {
       >
         Lo que ocurre en tu recorrido, en un solo lugar.
       </Heading>
+      <p>
+        <Link to="/recordatorios">Ver recordatorios de mentoría →</Link>
+      </p>
       {!items.length ? (
         <Empty title="Estás al día">Las respuestas, revisiones y reservas aparecerán aquí.</Empty>
       ) : (
@@ -655,6 +699,9 @@ export function Notices() {
           >
             <div>
               <h3>{n.title}</h3>
+              {state.reminderDeliveries.some(
+                (d) => d.noticeId === n.id && !deliveryIsCurrent(state, d),
+              ) && <Badge tone="pending">Sin efecto · consulta la agenda actual</Badge>}
               <p>{n.body}</p>
               <span className="soft">{dateLabel(n.date)}</span>
             </div>

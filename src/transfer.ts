@@ -27,10 +27,14 @@ export function readBackup(text: string) {
   if (
     s.purchases.some(
       (p) =>
-        !s.users.some((u) => u.id === p.userId) || !s.programs.some((x) => x.id === p.programId),
+        !s.users.some((u) => u.id === p.userId) ||
+        !s.programs.some((x) => x.id === p.programId) ||
+        (p.lessonIds &&
+          (new Set(p.lessonIds).size !== p.lessonIds.length ||
+            p.lessonIds.some((id) => !s.lessons.some((l) => l.id === id)))),
     )
   )
-    throw new Error('Una compra no tiene alumno o programa válido.');
+    throw new Error('Una compra no tiene alumno, programa o temario válido.');
   if (
     s.submissions
       .flatMap((a) => [a.attachment, ...(a.revisions ?? []).map((r) => r.attachment)])

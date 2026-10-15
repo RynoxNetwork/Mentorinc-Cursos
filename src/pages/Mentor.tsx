@@ -8,6 +8,9 @@ import {
   dateLabel,
   visibleLessons,
   suggestedFocus,
+  learningPurchase,
+  purchaseAccessState,
+  accessLabels,
   type AppState,
 } from '../model';
 import { Heading, Badge, Field, Area, Select, Avatar, Empty, getText } from '../ui';
@@ -99,7 +102,9 @@ export default function Mentor() {
                           ? state.programs.find(
                               (p) => p.id === activeAccess(state, u.id)?.programId,
                             )?.name
-                          : 'Acceso pendiente'}
+                          : learningPurchase(state, u.id)
+                            ? accessLabels[purchaseAccessState(learningPurchase(state, u.id)!)]
+                            : 'Acceso pendiente'}
                       </p>
                     </div>
                   </div>
@@ -180,9 +185,7 @@ function StudentDetail({ id }: { id: string }) {
           }
         >
           {state.modules
-            .filter(
-              (m) => !m.archived && visibleLessons(state, u.id).some((l) => l.moduleId === m.id),
-            )
+            .filter((m) => visibleLessons(state, u.id).some((l) => l.moduleId === m.id))
             .map((m) => (
               <option value={m.id} key={m.id}>
                 {m.title}

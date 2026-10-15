@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CalendarDays, ArrowRight, ExternalLink } from 'lucide-react';
 import { useStore } from '../store';
 import { activeAccess, availableSlots, dateLabel, type AppState } from '../model';
-import { Heading, Access, Badge, Area, Field, Select, Empty, getText } from '../ui';
+import { Heading, Access, Badge, Area, Field, Select, Empty, getText, ButtonLink } from '../ui';
 
 export function Agenda() {
   const { user } = useStore();
@@ -31,7 +31,14 @@ function StudentAgenda() {
   const selectedBooking = bookings.find((b) => b.id === editing);
   return (
     <>
-      <Heading title="Una conversación para avanzar">
+      <Heading
+        title="Una conversación para avanzar"
+        action={
+          <ButtonLink to="/recordatorios" secondary>
+            Recordatorios
+          </ButtonLink>
+        }
+      >
         Reserva un espacio con tu mentor. Zona horaria: Lima, Perú (UTC−5).
       </Heading>
       <div className="split">
@@ -308,7 +315,14 @@ function TeamAgenda() {
     .sort((a, b) => a.date.localeCompare(b.date));
   return (
     <>
-      <Heading title="Tu agenda de mentoría">
+      <Heading
+        title="Tu agenda de mentoría"
+        action={
+          <ButtonLink to="/recordatorios" secondary>
+            Recordatorios
+          </ButtonLink>
+        }
+      >
         Sesiones y disponibilidad · Lima, Perú (UTC−5).
       </Heading>
       <div className="tabs">

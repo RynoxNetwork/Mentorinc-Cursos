@@ -2,6 +2,8 @@ import {
   activeAccess,
   learningPurchase,
   visibleLessons,
+  requiredLessonIds,
+  purchaseAccessState,
   type AppState,
   type Person,
 } from './model';
@@ -21,10 +23,12 @@ export const experienceLabels = {
 };
 export function canFinish(s: AppState, u: Person) {
   const lessons = visibleLessons(s, u.id);
+  const ids = requiredLessonIds(s, u.id);
   return (
     !!u.initialAssessment &&
     !!activeAccess(s, u.id) &&
     lessons.length > 0 &&
+    lessons.length === ids.length &&
     lessons.every((l) => u.completed.includes(l.id)) &&
     (!activeAccess(s, u.id)?.requireReviews ||
       lessons.every((l) =>
@@ -85,11 +89,7 @@ export function sessionActivity(s: AppState, userIds: string[], period: Period =
 // The current balance is intentionally independent of the historical period filter.
 export function sessionBalance(s: AppState, userIds: string[]) {
   const purchases = s.purchases.filter(
-    (p) =>
-      userIds.includes(p.userId) &&
-      p.payment === 'confirmado' &&
-      p.approval === 'aprobado' &&
-      (!p.expiresAt || Date.parse(p.expiresAt) > Date.now()),
+    (p) => userIds.includes(p.userId) && purchaseAccessState(p) === 'vigente',
   );
   return purchases.reduce(
     (totals, p) => {

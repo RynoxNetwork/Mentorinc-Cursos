@@ -20,6 +20,8 @@ import {
   Satisfaction,
   type LearnerContext,
   activeAccess,
+  purchaseAccessState,
+  preserveEnrollmentLessons,
   programLessons,
   visibleLessons,
   suggestedFocus,
@@ -27,8 +29,11 @@ import {
   now,
   safeUrl,
   uid,
+  money,
 } from './model';
 import { canFinish, hasAttended } from './insights';
+import { ReminderSettings } from './reminders-model';
+import { simulateReminders } from './reminders';
 
 export type Command =
   | OperationsCommand
@@ -79,6 +84,8 @@ export type Command =
   | { type: 'saveProgram'; program: CourseProgram }
   | { type: 'saveModule'; module: CourseModule }
   | { type: 'saveLesson'; lesson: CourseLesson }
+  | { type: 'reminderSettings'; enabled: boolean; hoursBefore: number }
+  | { type: 'simulateReminders'; bookingId?: string }
   | { type: 'read'; id?: string };
 
 function requireThat(condition: unknown, message: string): asserts condition {
@@ -107,7 +114,7 @@ function notify(s: AppState, userId: string, title: string, body: string, href: 
 
 // These are browser-side demo rules, not a security boundary. A future backend must enforce them again.
 export function execute(current: AppState, command: Command): AppState {
-  const s = structuredClone(current),
+  const s = preserveEnrollmentLessons(structuredClone(current)),
     c = command;
   if (c.type === 'logout') {
     s.session = null;
@@ -209,13 +216,8 @@ export function execute(current: AppState, command: Command): AppState {
     actor.role === 'admin' ||
     (actor.role === 'mentor' && s.users.find((u) => u.id === userId)?.mentorId === actor.id);
   const lessonFor = (id: string) => {
-    const l = s.lessons.find(
-      (l) => l.id === id && l.published && !s.modules.find((m) => m.id === l.moduleId)?.archived,
-    );
-    requireThat(
-      l && visibleLessons(s, actor.id).some((x) => x.id === id),
-      'Esta lección no está disponible en tu programa.',
-    );
+    const l = visibleLessons(s, actor.id).find((l) => l.id === id);
+    requireThat(l, 'Esta lección no está disponible en tu programa.');
     return l;
   };
   switch (c.type) {
@@ -367,7 +369,8 @@ export function execute(current: AppState, command: Command): AppState {
         'No puedes modificar este pago.',
       );
       if (c.status === 'reembolsado') admin();
-      else
+      if (p.payment === c.status) break;
+      if (c.status !== 'reembolsado')
         requireThat(
           p.approval === 'pendiente' && p.payment !== 'reembolsado',
           'Este pago ya está cerrado.',
@@ -388,6 +391,21 @@ export function execute(current: AppState, command: Command): AppState {
           : `Tu pago está ${c.status}.`,
         '/compras',
       );
+      if (c.status === 'confirmado') {
+        const student = s.users.find((u) => u.id === p.userId)!;
+        const program = s.programs.find((x) => x.id === p.programId);
+        s.users
+          .filter((u) => u.role === 'admin' && u.active)
+          .forEach((u) =>
+            notify(
+              s,
+              u.id,
+              'Pago confirmado: revisión de acceso pendiente',
+              `${student.name} · ${program?.name || 'Programa'} · ${money(p.amount)}. Compra ${p.id}. Revisa el pago de prueba y aprueba el acceso desde Compras y accesos.`,
+              '/admin/compras',
+            ),
+          );
+      }
       break;
     }
     case 'approval': {
@@ -398,12 +416,7 @@ export function execute(current: AppState, command: Command): AppState {
         requireThat(p.payment === 'confirmado', 'Primero se necesita el pago confirmado.');
         requireThat(
           !s.purchases.some(
-            (x) =>
-              x.id !== p.id &&
-              x.userId === p.userId &&
-              x.payment === 'confirmado' &&
-              x.approval === 'aprobado' &&
-              (!x.expiresAt || Date.parse(x.expiresAt) > Date.now()),
+            (x) => x.id !== p.id && x.userId === p.userId && purchaseAccessState(x) === 'vigente',
           ),
           'El alumno ya tiene otro programa activo.',
         );
@@ -608,6 +621,7 @@ export function execute(current: AppState, command: Command): AppState {
       );
       const topic = clean(c.topic, 'Tema de la sesión', 5, 300);
       if (old) {
+        old.reminderVersion = (old.reminderVersion ?? 0) + 1;
         old.slotId = c.slotId;
         old.topic = topic;
         old.meeting = '';
@@ -620,6 +634,7 @@ export function execute(current: AppState, command: Command): AppState {
           status: 'confirmada',
           topic,
           meeting: '',
+          reminderVersion: 0,
         });
       notify(s, actor.id, old ? 'Sesión reprogramada' : 'Sesión confirmada', topic, '/agenda');
       notify(s, actor.mentorId, 'Agenda actualizada', `${actor.name}: ${topic}`, '/agenda');
@@ -797,6 +812,14 @@ export function execute(current: AppState, command: Command): AppState {
       else s.lessons[i] = value;
       break;
     }
+    case 'reminderSettings':
+      admin();
+      s.reminderSettings = ReminderSettings.parse(c);
+      break;
+    case 'simulateReminders':
+      requireThat(actor.role !== 'alumno', 'La simulación corresponde al mentor o administración.');
+      simulateReminders(s, actor, c.bookingId);
+      break;
     case 'read':
       s.notices
         .filter((n) => n.userId === actor.id && (!c.id || c.id === n.id))

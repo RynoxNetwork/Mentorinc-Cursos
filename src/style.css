@@ -2813,6 +2813,13 @@ form > .action {
 .readiness-row .badge {
   flex-shrink: 0;
 }
+.reminder-preview {
+  padding: 0 22px 18px;
+  overflow-wrap: anywhere;
+}
+.reminder-card .actions {
+  margin-top: 18px;
+}
 .navigation {
   flex-wrap: wrap;
   column-gap: 22px;
@@ -2827,6 +2834,14 @@ form > .action {
   margin: 10px 0;
 }
 @media (max-width: 760px) {
+  .reminder-card .section-title,
+  .reminders-list-title {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .reminders-list-title > button {
+    width: 100%;
+  }
   .reading-panel {
     padding: 22px 18px;
   }

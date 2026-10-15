@@ -298,16 +298,16 @@ describe('Recorridos locales de Mentorinc', () => {
     expect(activeAccess(s, 'maria')?.sessions).toBe(2);
     expect(activeAccess(s, 'maria')?.minutes).toBe(30);
   });
-  it('archivar contenido retira la lección visible sin borrar el historial', () => {
+  it('archivar contenido lo retira del catálogo y conserva el acceso de alumnos inscritos', () => {
     let s = createSeed();
     s.session = 'admin';
     s = execute(s, { type: 'saveModule', module: { ...s.modules[0], archived: true } });
     expect(visibleLessons(s)).toHaveLength(12);
     expect(s.users[0].completed).toContain('yo-1');
     s.session = 'maria';
-    expect(() => execute(s, { type: 'complete', lessonId: 'yo-1', answer: 0 })).toThrow(
-      'no está disponible',
-    );
+    expect(visibleLessons(s, 'maria')).toHaveLength(15);
+    s = execute(s, { type: 'complete', lessonId: 'yo-1', answer: 0 });
+    expect(progress(s, s.users[0])).toBe(27);
   });
   it('no puede desactivar a un mentor con alumnos ni a sí mismo', () => {
     const s = createSeed();

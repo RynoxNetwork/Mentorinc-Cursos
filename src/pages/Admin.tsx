@@ -4,6 +4,8 @@ import { Plus, ArrowRight, Users, BookOpen, CreditCard, Download } from 'lucide-
 import { useStore } from '../store';
 import {
   activeAccess,
+  purchaseAccessState,
+  accessLabels,
   progress,
   money,
   dateLabel,
@@ -13,7 +15,18 @@ import {
   type CourseLesson,
   type Person,
 } from '../model';
-import { Heading, Badge, Field, Area, Select, Avatar, Empty, getText, download } from '../ui';
+import {
+  Heading,
+  Badge,
+  Field,
+  Area,
+  Select,
+  Avatar,
+  Empty,
+  getText,
+  download,
+  useLocalClock,
+} from '../ui';
 
 export default function Admin() {
   const { section } = useParams();
@@ -134,6 +147,7 @@ function Overview() {
 }
 function PurchasesAdmin() {
   const { state, run } = useStore();
+  const time = useLocalClock();
   const [filter, setFilter] = useState('pendientes');
   const items = state.purchases.filter(
     (p) =>
@@ -166,8 +180,11 @@ function PurchasesAdmin() {
           </div>
           <div className="actions">
             <Badge tone={p.payment === 'confirmado' ? 'good' : 'pending'}>Pago {p.payment}</Badge>
-            <Badge tone={p.approval === 'aprobado' ? 'good' : 'pending'}>Acceso {p.approval}</Badge>
+            <Badge tone={purchaseAccessState(p, time) === 'vigente' ? 'good' : 'pending'}>
+              {accessLabels[purchaseAccessState(p, time)]}
+            </Badge>
           </div>
+          {p.expiresAt && <p className="soft">Vigencia hasta {dateLabel(p.expiresAt)}</p>}
           <div className="actions section-spaced">
             {p.approval === 'pendiente' && (
               <>
@@ -594,7 +611,8 @@ function ContentAdmin() {
           </button>
         }
       >
-        Edita contenido, actividades, evaluaciones y recursos. Archivar conserva el historial.
+        Archivar retira contenido del catálogo. Los alumnos ya inscritos conservan sus lecciones y
+        requisitos.
       </Heading>
       {newModule && (
         <ModuleEditor
@@ -724,7 +742,7 @@ function ModuleEditor({ value: m, onSaved }: { value: CourseModule; onSaved?: ()
           />
           <Select label="Estado del módulo" name="archived" defaultValue={m.archived ? 'si' : 'no'}>
             <option value="no">Visible</option>
-            <option value="si">Archivado</option>
+            <option value="si">Archivado del catálogo</option>
           </Select>
         </div>
         <button className="action">Guardar módulo</button>
@@ -903,7 +921,7 @@ function LessonEditor({ value: l, onSaved }: { value: CourseLesson; onSaved: () 
         defaultValue={l.published ? 'si' : 'no'}
       >
         <option value="si">Publicada</option>
-        <option value="no">Borrador / archivada</option>
+        <option value="no">Borrador / fuera del catálogo</option>
       </Select>
       <button className="action">Guardar lección</button>
     </form>

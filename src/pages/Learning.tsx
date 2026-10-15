@@ -15,6 +15,8 @@ import {
   progress,
   visibleLessons,
   suggestedFocus,
+  learningPurchase,
+  purchaseAccessState,
   type CourseLesson,
 } from '../model';
 import { Heading, ButtonLink, Badge, Area, Empty, Access, download, getText } from '../ui';
@@ -24,7 +26,7 @@ export function RoutePage() {
   if (!user) return null;
   const scopedLessons = visibleLessons(state, user.id);
   const modules = state.modules
-    .filter((m) => !m.archived && scopedLessons.some((l) => l.moduleId === m.id))
+    .filter((m) => scopedLessons.some((l) => l.moduleId === m.id))
     .sort((a, b) => a.order - b.order);
   const focus =
     modules.find((m) => m.id === user.focus) ??
@@ -49,7 +51,12 @@ export function RoutePage() {
           </div>
           {!activeAccess(state, user.id) && (
             <div className="notice">
-              <p>Explora tu ruta. Para abrir las lecciones necesitas un programa aprobado.</p>
+              <p>
+                {learningPurchase(state, user.id) &&
+                purchaseAccessState(learningPurchase(state, user.id)!) === 'vencido'
+                  ? 'Tu acceso ha vencido. Conservas el avance y el temario de tu inscripción.'
+                  : 'Explora tu ruta. Para abrir las lecciones necesitas un programa aprobado.'}
+              </p>
               <Link to="/compras">Revisar acceso →</Link>
             </div>
           )}
@@ -120,9 +127,7 @@ export function RoutePage() {
 export function LessonPage() {
   const { id } = useParams();
   const { state, user } = useStore();
-  const lesson = visibleLessons(state, user?.id).find(
-    (l) => l.id === id && l.published && !state.modules.find((m) => m.id === l.moduleId)?.archived,
-  );
+  const lesson = visibleLessons(state, user?.id).find((l) => l.id === id);
   return (
     <Access>
       {lesson ? (
@@ -463,8 +468,8 @@ function Lesson({ lesson: l }: { lesson: CourseLesson }) {
         </section>
         <aside className="aside">
           <h3>En este módulo</h3>
-          {state.lessons
-            .filter((x) => x.moduleId === l.moduleId && x.published)
+          {lessons
+            .filter((x) => x.moduleId === l.moduleId)
             .map((x) => (
               <Link
                 className={`lesson-nav ${x.id === l.id ? 'current' : ''}`}

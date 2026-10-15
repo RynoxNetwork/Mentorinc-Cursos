@@ -137,6 +137,7 @@ export function Operations() {
                 <Link to="/admin/contenido">Completar contenido →</Link>
                 <Link to="/admin/programas">Configurar programas →</Link>
                 <Link to="/ayuda">Guía y capacitación →</Link>
+                <Link to="/recordatorios">Preparar recordatorios locales →</Link>
               </div>
             </section>
             <form

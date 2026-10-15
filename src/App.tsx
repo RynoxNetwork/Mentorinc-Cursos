@@ -33,6 +33,7 @@ import { Agenda } from './pages/Agenda';
 import { Consultations } from './pages/Consultations';
 import { Diagnostic, Results, FinalAssessment, SatisfactionPage } from './pages/Development';
 const Reports = lazy(() => import('./pages/Reports'));
+const Reminders = lazy(() => import('./pages/Reminders'));
 const Mentor = lazy(() => import('./pages/Mentor'));
 const Admin = lazy(() => import('./pages/Admin'));
 
@@ -320,6 +321,7 @@ export default function App() {
           <Route path="satisfaccion" element={<SatisfactionPage />} />
           <Route path="compras" element={<Purchases />} />
           <Route path="notificaciones" element={<Notices />} />
+          <Route path="recordatorios" element={<Reminders />} />
           <Route path="ruta" element={<RoutePage />} />
           <Route path="practica/:id?" element={<Practice />} />
           <Route path="leccion/:id" element={<LessonPage />} />
