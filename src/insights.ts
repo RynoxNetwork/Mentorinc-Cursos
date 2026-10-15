@@ -1,4 +1,10 @@
-import { activeAccess, visibleLessons, type AppState, type Person } from './model';
+import {
+  activeAccess,
+  learningPurchase,
+  visibleLessons,
+  type AppState,
+  type Person,
+} from './model';
 
 export const areas = ['El Yo', 'Comunicación', 'Producto', 'Negociación'];
 export const questions = [
@@ -14,16 +20,31 @@ export const experienceLabels = {
   'mas-3': 'Más de 3 años',
 };
 export function canFinish(s: AppState, u: Person) {
-  const lessons = visibleLessons(s);
+  const lessons = visibleLessons(s, u.id);
   return (
     !!u.initialAssessment &&
     !!activeAccess(s, u.id) &&
     lessons.length > 0 &&
-    lessons.every((l) => u.completed.includes(l.id))
+    lessons.every((l) => u.completed.includes(l.id)) &&
+    (!activeAccess(s, u.id)?.requireReviews ||
+      lessons.every((l) =>
+        s.submissions.some(
+          (x) =>
+            x.userId === u.id &&
+            x.lessonId === l.id &&
+            x.status === 'aprobada' &&
+            (!x.purchaseId || x.purchaseId === activeAccess(s, u.id)?.id),
+        ),
+      ))
   );
 }
 export const hasAttended = (s: AppState, userId: string) =>
-  s.bookings.some((b) => b.userId === userId && b.status === 'realizada');
+  s.bookings.some(
+    (b) =>
+      b.userId === userId &&
+      b.status === 'realizada' &&
+      b.purchaseId === learningPurchase(s, userId)?.id,
+  );
 export const mean = (values: number[]) =>
   values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
 export const numberLabel = (value: number | null) =>
@@ -64,7 +85,11 @@ export function sessionActivity(s: AppState, userIds: string[], period: Period =
 // The current balance is intentionally independent of the historical period filter.
 export function sessionBalance(s: AppState, userIds: string[]) {
   const purchases = s.purchases.filter(
-    (p) => userIds.includes(p.userId) && p.payment === 'confirmado' && p.approval === 'aprobado',
+    (p) =>
+      userIds.includes(p.userId) &&
+      p.payment === 'confirmado' &&
+      p.approval === 'aprobado' &&
+      (!p.expiresAt || Date.parse(p.expiresAt) > Date.now()),
   );
   return purchases.reduce(
     (totals, p) => {

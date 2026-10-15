@@ -150,6 +150,7 @@ export function Access({ children }: { children: ReactNode }) {
           El acceso se habilita cuando el pago está confirmado y Mentorinc aprueba tu solicitud.
         </p>
         <ButtonLink to="/compras">Revisar mi acceso</ButtonLink>
+        <Link to="/soporte">Solicitar ayuda con el acceso</Link>
       </div>
     );
   return <>{children}</>;

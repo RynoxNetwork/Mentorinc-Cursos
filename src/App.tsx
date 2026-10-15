@@ -1,3 +1,8 @@
+import { Help, Policies, ProgramDetail, Practice } from './pages/Experience';
+const Support = lazy(() => import('./pages/Support'));
+const Operations = lazy(() =>
+  import('./pages/Operations').then((m) => ({ default: m.Operations })),
+);
 import { Component, Suspense, lazy, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Link,
@@ -110,6 +115,8 @@ function Layout() {
           ['/admin/personas', 'Personas'],
           ['/admin/contenido', 'Contenido'],
           ['/admin/programas', 'Programas'],
+          ['/soporte', 'Soporte'],
+          ['/operacion', 'Operación'],
         ]
       : user?.role === 'mentor'
         ? [
@@ -124,6 +131,7 @@ function Layout() {
               ['/', 'Inicio'],
               ['/ruta', 'Mi ruta'],
               ['/resultados', 'Mi avance'],
+              ['/practica', 'Práctica'],
               ['/agenda', 'Agenda'],
               ['/consultas', 'Mi mentor'],
               ['/programas', 'Programas'],
@@ -192,6 +200,7 @@ function Layout() {
                   </Link>
                   <Link to="/compras">Mis compras</Link>
                   <Link to="/correo">Correo de prueba</Link>
+                  <Link to="/ayuda">Ayuda y soporte</Link>
                   <Link to="/notificaciones">Notificaciones</Link>
                   <div className="menu-divider" />
                   <span className="soft">Recorrer la demostración</span>
@@ -264,7 +273,11 @@ function Layout() {
           <span>Mentorinc · Crecer desde quien eres.</span>
           <div>
             <Link to="/modelo">Nuestro modelo</Link>
-            <Link to="/ajustes">Ayuda y datos locales</Link>
+            <Link to="/ayuda">Ayuda</Link>
+            <Link to="/politicas/privacidad">Privacidad</Link>
+            <Link to="/politicas/compra">Condiciones</Link>
+            <Link to="/politicas/devoluciones">Devoluciones</Link>
+            <Link to="/ajustes">Datos locales</Link>
           </div>
         </footer>
       </div>
@@ -289,6 +302,10 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<Start />} />
         <Route path="programas" element={<Programs />} />
+        <Route path="programas/:id" element={<ProgramDetail />} />
+        <Route path="ayuda" element={<Help />} />
+        <Route path="politicas/:kind" element={<Policies />} />
+        <Route path="soporte/:id?" element={<Support />} />
         <Route path="modelo" element={<About />} />
         <Route path="acceso" element={<Auth />} />
         <Route path="registro" element={<Auth register />} />
@@ -304,6 +321,7 @@ export default function App() {
           <Route path="compras" element={<Purchases />} />
           <Route path="notificaciones" element={<Notices />} />
           <Route path="ruta" element={<RoutePage />} />
+          <Route path="practica/:id?" element={<Practice />} />
           <Route path="leccion/:id" element={<LessonPage />} />
           <Route path="agenda" element={<Agenda />} />
           <Route path="consultas/:id?" element={<Consultations />} />
@@ -314,6 +332,7 @@ export default function App() {
         </Route>
         <Route element={<Protected roles={['admin']} />}>
           <Route path="admin/resultados" element={<Reports />} />
+          <Route path="operacion" element={<Operations />} />
           <Route path="admin/:section?" element={<Admin />} />
         </Route>
         <Route

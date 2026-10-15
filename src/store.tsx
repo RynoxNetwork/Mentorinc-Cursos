@@ -1,3 +1,4 @@
+import { readBackup } from './transfer';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { parseStoredState, STORE_KEY, type AppState } from './model';
 import { createSeed } from './seed';
@@ -11,6 +12,7 @@ type Store = {
   run: (c: Command, message?: string) => boolean;
   clear: () => void;
   reset: () => void;
+  restore: (state: AppState) => boolean;
 };
 const Context = createContext<Store | null>(null);
 export function loadState(storage: Pick<Storage, 'getItem'>): { state: AppState; error: string } {
@@ -57,6 +59,22 @@ export function Provider({ children }: { children: ReactNode }) {
       return false;
     }
   }
+  function restore(copy: AppState) {
+    try {
+      const next = readBackup(JSON.stringify(copy));
+      localStorage.setItem(STORE_KEY, JSON.stringify(next));
+      setState(next);
+      setStorageHealthy(true);
+      setError('');
+      setMessage('Copia restaurada. Inicia sesión para continuar.');
+      return true;
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : 'No se pudo restaurar. Tus datos anteriores se conservan.',
+      );
+      return false;
+    }
+  }
   function reset() {
     try {
       const next = createSeed();
@@ -99,6 +117,7 @@ export function Provider({ children }: { children: ReactNode }) {
           setMessage('');
         },
         reset,
+        restore,
       }}
     >
       {children}

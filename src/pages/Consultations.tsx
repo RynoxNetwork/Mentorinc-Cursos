@@ -20,12 +20,6 @@ export function Consultations() {
   const thread = items.find((t) => t.id === id);
   const canStart = user.role === 'alumno' && !!activeAccess(state, user.id);
   const mentor = state.users.find((u) => u.id === user.mentorId);
-  if (user.role === 'alumno' && !activeAccess(state, user.id))
-    return (
-      <Access>
-        <span />
-      </Access>
-    );
   return (
     <>
       <Heading
@@ -44,6 +38,12 @@ export function Consultations() {
           ? `Conversa con ${mentor?.name || 'tu mentor'} y guarda el hilo de tus avances.`
           : 'Responde, da seguimiento y cierra cada conversación cuando esté resuelta.'}
       </Heading>
+      {user.role === 'alumno' && !activeAccess(state, user.id) && (
+        <p className="notice">
+          Puedes leer y responder tus conversaciones. Para abrir una consulta académica necesitas
+          acceso vigente. <Link to="/soporte">Solicitar soporte de acceso</Link>
+        </p>
+      )}
       {creating && !id ? (
         <form
           className="compose"

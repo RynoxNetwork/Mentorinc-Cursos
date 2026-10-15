@@ -31,32 +31,38 @@ describe('Recorridos locales de Mentorinc', () => {
       execute(s, { type: 'approval', id: 'purchase-diego', status: 'aprobado' }),
     ).toThrow('pago confirmado');
     s.session = 'diego';
-    expect(() => execute(s, { type: 'purchase', programId: 'senior' })).toThrow(
+    expect(() => execute(s, { type: 'purchase', accepted: true, programId: 'senior' })).toThrow(
       'solicitud en curso',
     );
   });
   it('registra, confirma y consume una sola vez el enlace local', () => {
     let s = execute(createSeed(), {
       type: 'register',
+      accepted: true,
       name: 'Alumno de prueba',
       email: 'nuevo@example.test',
     });
     const userId = s.session!;
     expect(s.users.find((u) => u.id === userId)?.verified).toBe(false);
-    expect(() => execute(s, { type: 'purchase', programId: 'junior' })).toThrow(
+    expect(() => execute(s, { type: 'purchase', accepted: true, programId: 'junior' })).toThrow(
       'Confirma tu correo',
     );
     const id = s.mails[0].id;
     s = execute(s, { type: 'useLink', id });
     expect(s.users.find((u) => u.id === userId)?.verified).toBe(true);
     expect(() => execute(s, { type: 'useLink', id })).toThrow('ya se usó');
-    s = execute(s, { type: 'purchase', programId: 'junior' });
+    s = execute(s, { type: 'purchase', accepted: true, programId: 'junior' });
     expect(s.purchases[0].userId).toBe(userId);
   });
   it('rechaza correos duplicados y enlaces caducados', () => {
     const s = createSeed();
     expect(() =>
-      execute(s, { type: 'register', name: 'Duplicado', email: 'MARIA@example.test' }),
+      execute(s, {
+        type: 'register',
+        accepted: true,
+        name: 'Duplicado',
+        email: 'MARIA@example.test',
+      }),
     ).toThrow('ya tiene');
     const next = execute(s, { type: 'sendLink', email: 'maria@example.test' });
     next.mails[0].expires = '2020-01-01T00:00:00Z';
@@ -72,13 +78,20 @@ describe('Recorridos locales de Mentorinc', () => {
     };
     const s = execute(fresh, {
       type: 'diagnostic',
+      accepted: true,
       context,
       values: [4, 2, 5, 3],
       goal: 'Quiero mejorar mis conversaciones.',
     });
     expect(s.users[0].focus).toBe('com');
     expect(() =>
-      execute(s, { type: 'diagnostic', values: [1], goal: 'Completar mi ruta', context }),
+      execute(s, {
+        type: 'diagnostic',
+        accepted: true,
+        values: [1],
+        goal: 'Completar mi ruta',
+        context,
+      }),
     ).toThrow('cuatro');
   });
   it('no completa con respuesta incorrecta y completar es idempotente', () => {
@@ -316,7 +329,7 @@ describe('Recorridos locales de Mentorinc', () => {
     expect(loaded.state.users[0].name).toBe('María de prueba');
     const broken = loadState({ getItem: () => '{bad json' });
     expect(broken.error).toContain('no se pudieron abrir');
-    expect(broken.state.version).toBe(2);
+    expect(broken.state.version).toBe(3);
   });
   it('un estado fallido no modifica el estado original', () => {
     const s = createSeed(),

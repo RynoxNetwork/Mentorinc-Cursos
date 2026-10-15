@@ -1,3 +1,4 @@
+import { initialPolicies, initialCases } from './operations-model';
 import { State, type AppState, type CourseLesson, now } from './model';
 
 const topics = [
@@ -233,6 +234,10 @@ export function createSeed(): AppState {
       correct: 0,
       video: '',
       resource: '',
+      contentStatus: 'muestra',
+      rubric:
+        'Explica una situación concreta, relaciona la práctica con la lección y propone un siguiente paso. Criterio de muestra pendiente de validación.',
+      passScore: 12,
       published: true,
     })),
   );
@@ -261,12 +266,15 @@ export function createSeed(): AppState {
     }
   }
   return State.parse({
-    version: 2,
+    version: 3,
+    policies: initialPolicies(),
+    cases: initialCases(),
     session: 'maria',
     users: [
       {
         ...base,
         id: 'maria',
+        journeyId: 'purchase-maria',
         initialAssessment: {
           values: [...base.diagnostic],
           date: now(),
@@ -319,6 +327,9 @@ export function createSeed(): AppState {
       {
         id: 'junior',
         name: 'Junior',
+        moduleIds: ['yo', 'com', 'pro'],
+        audience:
+          'Primera experiencia comercial: presentarte, escuchar y explicar una propuesta. Temario de muestra.',
         description: 'Tu punto de partida. Construye confianza y descubre tu forma de vender.',
         price: 199,
         sessions: 2,
@@ -328,6 +339,8 @@ export function createSeed(): AppState {
       {
         id: 'senior',
         name: 'Senior',
+        moduleIds: ['yo', 'com', 'pro', 'neg'],
+        audience: 'Para practicar presentación y negociación. Temario de muestra.',
         description: 'Profundiza tu práctica y convierte conversaciones en acuerdos.',
         price: 399,
         sessions: 4,
@@ -337,6 +350,8 @@ export function createSeed(): AppState {
       {
         id: 'master',
         name: 'Master',
+        moduleIds: topics.map((t) => t[0]),
+        audience: 'Para integrar todo el recorrido con más acompañamiento. Temario de muestra.',
         description: 'Afina tu estrategia con acompañamiento y revisión personalizada.',
         price: 699,
         sessions: 6,
@@ -357,6 +372,7 @@ export function createSeed(): AppState {
         id: 'purchase-maria',
         userId: 'maria',
         programId: 'junior',
+        lessonIds: lessons.map((l) => l.id),
         amount: 199,
         sessions: 2,
         minutes: 30,

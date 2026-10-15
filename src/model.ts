@@ -1,4 +1,16 @@
 import { z } from 'zod';
+import {
+  Policy,
+  Consent,
+  SupportTicket,
+  PracticeCase,
+  CaseAttempt,
+  QuizAttempt,
+  DeliverySettings,
+  defaultDelivery,
+  initialPolicies,
+  initialCases,
+} from './operations-model';
 
 export const Role = z.enum(['alumno', 'mentor', 'admin']);
 export const Scores = z.array(z.number().int().min(1).max(5)).length(4);
@@ -35,6 +47,20 @@ export const User = z.object({
   focus: z.string(),
   diagnostic: z.array(z.number().min(1).max(5)),
   completed: z.array(z.string()),
+  registeredAt: z.string().nullable().optional(),
+  firstLearningAt: z.string().nullable().optional(),
+  journeyId: z.string().optional(),
+  history: z
+    .array(
+      z.object({
+        purchaseId: z.string(),
+        completed: z.array(z.string()),
+        initialAssessment: Assessment.nullable(),
+        finalAssessment: Assessment.nullable(),
+        satisfaction: Satisfaction.nullable(),
+      }),
+    )
+    .optional(),
   onboarding: Onboarding.nullable().default(null),
   initialAssessment: Assessment.nullable().default(null),
   finalAssessment: Assessment.nullable().default(null),
@@ -45,6 +71,10 @@ export const Program = z.object({
   name: z.string().min(2).max(80),
   description: z.string().min(10).max(500),
   price: z.number().min(0),
+  moduleIds: z.array(z.string()).optional(),
+  accessDays: z.number().int().min(0).max(1095).optional(),
+  requireReviews: z.boolean().optional(),
+  audience: z.string().max(500).optional(),
   sessions: z.number().int().min(0).max(20),
   minutes: z.number().int().min(15).max(120),
   published: z.boolean(),
@@ -69,6 +99,11 @@ export const Lesson = z.object({
   correct: z.number().int().min(0).max(2),
   video: z.string(),
   resource: z.string(),
+  resourceName: z.string().max(120).optional(),
+  transcript: z.string().max(20000).optional(),
+  rubric: z.string().max(3000).optional(),
+  passScore: z.number().min(0).max(20).optional(),
+  contentStatus: z.enum(['muestra', 'validado']).optional(),
   published: z.boolean(),
 });
 export const Purchase = z.object({
@@ -76,6 +111,11 @@ export const Purchase = z.object({
   userId: z.string(),
   programId: z.string(),
   amount: z.number(),
+  lessonIds: z.array(z.string()).optional(),
+  requireReviews: z.boolean().optional(),
+  accessDays: z.number().optional(),
+  approvedAt: z.string().nullable().optional(),
+  expiresAt: z.string().nullable().optional(),
   sessions: z.number(),
   minutes: z.number(),
   payment: z.enum(['pendiente', 'confirmado', 'fallido', 'reembolsado']),
@@ -84,12 +124,29 @@ export const Purchase = z.object({
 });
 export const Submission = z.object({
   id: z.string(),
+  purchaseId: z.string().optional(),
   userId: z.string(),
   lessonId: z.string(),
   text: z.string(),
   attachment: z.object({ name: z.string(), data: z.string() }).nullable(),
   status: z.enum(['pendiente', 'aprobada', 'revisar']),
   feedback: z.string(),
+  reviewedBy: z.string().optional(),
+  reviewedAt: z.string().optional(),
+  rubric: z.string().optional(),
+  revisions: z
+    .array(
+      z.object({
+        text: z.string(),
+        attachment: z.object({ name: z.string(), data: z.string() }).nullable(),
+        feedback: z.string(),
+        score: z.number().nullable(),
+        date: z.string(),
+        reviewedBy: z.string().optional(),
+        reviewedAt: z.string().optional(),
+      }),
+    )
+    .optional(),
   score: z.number().min(0).max(20).nullable(),
   date: z.string(),
 });
@@ -138,7 +195,7 @@ export const Mail = z.object({
   expires: z.string(),
 });
 export const State = z.object({
-  version: z.literal(2),
+  version: z.literal(3),
   users: z.array(User),
   programs: z.array(Program),
   modules: z.array(Module),
@@ -151,6 +208,14 @@ export const State = z.object({
   notices: z.array(Notice),
   mails: z.array(Mail),
   session: z.string().nullable(),
+  pendingProgramId: z.string().default(''),
+  policies: z.array(Policy).default([]),
+  consents: z.array(Consent).default([]),
+  tickets: z.array(SupportTicket).default([]),
+  cases: z.array(PracticeCase).default([]),
+  caseAttempts: z.array(CaseAttempt).default([]),
+  quizAttempts: z.array(QuizAttempt).default([]),
+  delivery: DeliverySettings.default(defaultDelivery),
 });
 export type AppState = z.infer<typeof State>;
 export type Person = z.infer<typeof User>;
@@ -173,17 +238,65 @@ const LegacyState = State.extend({
   ),
 });
 export function parseStoredState(raw: unknown): AppState {
-  if (typeof raw === 'object' && raw !== null && 'version' in raw && raw.version === 1) {
-    const legacy = LegacyState.parse(raw);
+  if (typeof raw !== 'object' || raw === null || !('version' in raw)) return State.parse(raw);
+  if (raw.version === 1 || raw.version === 2) {
+    const old =
+      raw.version === 1
+        ? LegacyState.parse(raw)
+        : State.extend({ version: z.literal(2) }).parse(raw);
+    const allLessons = old.modules
+      .filter((m) => !m.archived)
+      .flatMap((m) =>
+        old.lessons.filter((l) => l.moduleId === m.id && l.published).map((l) => l.id),
+      );
     return State.parse({
-      ...legacy,
-      version: 2,
-      users: legacy.users.map((u) => ({
+      ...old,
+      version: 3,
+      policies: initialPolicies(),
+      cases: initialCases(),
+      programs: old.programs.map((p) => ({
+        ...p,
+        moduleIds:
+          p.moduleIds ||
+          (
+            {
+              junior: ['yo', 'com', 'pro'],
+              senior: ['yo', 'com', 'pro', 'neg'],
+              master: old.modules.map((m) => m.id),
+            } as Record<string, string[]>
+          )[p.id],
+      })),
+      submissions: old.submissions.map((x) => ({
+        ...x,
+        purchaseId:
+          x.purchaseId ||
+          old.purchases.find((p) => p.userId === x.userId && p.approval === 'aprobado')?.id,
+      })),
+      purchases: old.purchases.map((p) => ({
+        ...p,
+        lessonIds: allLessons,
+        accessDays: 0,
+        expiresAt: null,
+      })),
+      users: old.users.map((u) => ({
         ...u,
+        journeyId: old.purchases.find(
+          (p) => p.userId === u.id && p.approval === 'aprobado' && p.payment === 'confirmado',
+        )?.id,
         initialAssessment:
-          u.role === 'alumno' && Scores.safeParse(u.diagnostic).success
-            ? { values: u.diagnostic, date: null, source: 'anterior', goal: u.goal, reflection: '' }
-            : null,
+          raw.version === 1
+            ? u.role === 'alumno' && Scores.safeParse(u.diagnostic).success
+              ? {
+                  values: u.diagnostic,
+                  date: null,
+                  source: 'anterior',
+                  goal: u.goal,
+                  reflection: '',
+                }
+              : null
+            : 'initialAssessment' in u
+              ? u.initialAssessment
+              : null,
       })),
     });
   }
@@ -201,20 +314,51 @@ export function safeUrl(value: string) {
 }
 export function activeAccess(s: AppState, userId: string) {
   return s.purchases.find(
-    (p) => p.userId === userId && p.payment === 'confirmado' && p.approval === 'aprobado',
+    (p) =>
+      p.userId === userId &&
+      p.payment === 'confirmado' &&
+      p.approval === 'aprobado' &&
+      (!p.expiresAt || Date.parse(p.expiresAt) > Date.now()),
   );
 }
-export function visibleLessons(s: AppState) {
+export function programLessons(s: AppState, programId: string) {
+  const program = s.programs.find((p) => p.id === programId);
+  return visibleLessons(s).filter(
+    (l) => !program?.moduleIds || program.moduleIds.includes(l.moduleId),
+  );
+}
+export function learningPurchase(s: AppState, userId: string) {
+  return (
+    activeAccess(s, userId) ||
+    s.purchases.find((p) => p.id === s.users.find((u) => u.id === userId)?.journeyId)
+  );
+}
+export function visibleLessons(s: AppState, userId?: string) {
   return s.modules
     .filter((m) => !m.archived)
     .sort((a, b) => a.order - b.order)
-    .flatMap((m) => s.lessons.filter((l) => l.moduleId === m.id && l.published));
+    .flatMap((m) => s.lessons.filter((l) => l.moduleId === m.id && l.published))
+    .filter((l) => {
+      const p = userId ? learningPurchase(s, userId) : undefined;
+      return !p || !p.lessonIds || p.lessonIds.includes(l.id);
+    });
 }
 export function progress(s: AppState, u: Person) {
-  const lessons = visibleLessons(s);
+  const lessons = visibleLessons(s, u.id);
   return lessons.length
     ? Math.round((100 * lessons.filter((l) => u.completed.includes(l.id)).length) / lessons.length)
     : 0;
+}
+export function suggestedFocus(s: AppState, u: Person) {
+  const included = [...new Set(visibleLessons(s, u.id).map((l) => l.moduleId))];
+  return (
+    ['yo', 'com', 'pro', 'neg']
+      .map((id, i) => ({ id, score: u.diagnostic[i] ?? 5 }))
+      .filter((m) => included.includes(m.id))
+      .sort((a, b) => a.score - b.score)[0]?.id ??
+    included[0] ??
+    ''
+  );
 }
 export function overlaps(a: z.infer<typeof Slot>, b: z.infer<typeof Slot>) {
   const x = Date.parse(a.date),
@@ -231,6 +375,8 @@ export function availableSlots(s: AppState, userId: string, exceptBooking?: stri
         slot.mentorId === u?.mentorId &&
         slot.minutes === p?.minutes &&
         new Date(slot.date).getTime() > Date.now() &&
+        (!p?.expiresAt ||
+          Date.parse(slot.date) + slot.minutes * 60000 <= Date.parse(p.expiresAt)) &&
         !s.bookings.some((b) => {
           const booked = s.slots.find((x) => x.id === b.slotId);
           return (

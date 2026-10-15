@@ -44,7 +44,7 @@ describe('Medición y contexto local', () => {
     const before = JSON.stringify(legacy);
     const loaded = loadState({ getItem: () => before });
     expect(loaded.error).toBe('');
-    expect(loaded.state.version).toBe(2);
+    expect(loaded.state.version).toBe(3);
     expect(loaded.state.users[0].initialAssessment).toMatchObject({
       values: [3, 2, 4, 3],
       date: null,
@@ -52,7 +52,7 @@ describe('Medición y contexto local', () => {
     });
     expect(loaded.state.users[0].satisfaction).toBeNull();
     expect(loaded.state.users[0].completed).toEqual(legacy.users[0].completed);
-    expect(loaded.state.purchases).toEqual(legacy.purchases);
+    expect(loaded.state.purchases).toMatchObject(legacy.purchases);
     expect(loaded.state.session).toBe(legacy.session);
     expect(parseStoredState(loaded.state)).toEqual(loaded.state);
     expect(JSON.stringify(legacy)).toBe(before);
@@ -64,6 +64,7 @@ describe('Medición y contexto local', () => {
     fresh.users[0].initialAssessment = null;
     let s = execute(fresh, {
       type: 'diagnostic',
+      accepted: true,
       values: [3, 2, 4, 3],
       goal: 'Aprender a iniciar conversaciones.',
       context,
@@ -83,6 +84,7 @@ describe('Medición y contexto local', () => {
     expect(() =>
       execute(s, {
         type: 'diagnostic',
+        accepted: true,
         values: [5, 5, 5, 5],
         goal: 'Reemplazar mis respuestas.',
         context,

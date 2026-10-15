@@ -2,7 +2,14 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useStore } from '../store';
-import { activeAccess, progress, dateLabel, type AppState } from '../model';
+import {
+  activeAccess,
+  progress,
+  dateLabel,
+  visibleLessons,
+  suggestedFocus,
+  type AppState,
+} from '../model';
 import { Heading, Badge, Field, Area, Select, Avatar, Empty, getText } from '../ui';
 import { Comparison, ContextSummary } from '../measurement-ui';
 
@@ -161,9 +168,19 @@ function StudentDetail({ id }: { id: string }) {
           );
         }}
       >
-        <Select label="Foco recomendado" name="focus" defaultValue={u.focus}>
+        <Select
+          label="Foco recomendado"
+          name="focus"
+          defaultValue={
+            visibleLessons(state, u.id).some((l) => l.moduleId === u.focus)
+              ? u.focus
+              : suggestedFocus(state, u)
+          }
+        >
           {state.modules
-            .filter((m) => !m.archived)
+            .filter(
+              (m) => !m.archived && visibleLessons(state, u.id).some((l) => l.moduleId === m.id),
+            )
             .map((m) => (
               <option value={m.id} key={m.id}>
                 {m.title}
@@ -172,6 +189,51 @@ function StudentDetail({ id }: { id: string }) {
         </Select>
         <button className="action full">Actualizar ruta</button>
       </form>
+      <details className="route-item">
+        <summary>Iniciar una conversación</summary>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const f = e.currentTarget;
+            if (
+              run(
+                {
+                  type: 'mentorThread',
+                  userId: id,
+                  subject: getText(f, 'subject'),
+                  text: getText(f, 'text'),
+                },
+                'Conversación creada y alumno notificado',
+              )
+            )
+              f.reset();
+          }}
+        >
+          <Field
+            label="Asunto de la conversación"
+            name="subject"
+            required
+            minLength={3}
+            maxLength={100}
+          />
+          <Area label="Mensaje al alumno" name="text" required minLength={10} maxLength={3000} />
+          <button className="action">Iniciar conversación</button>
+        </form>
+      </details>
+      <details className="route-item">
+        <summary>Práctica en casos guiados</summary>
+        {state.caseAttempts
+          .filter((a) => a.userId === id)
+          .map((a) => (
+            <article key={a.id}>
+              <h3>
+                {a.title} · {a.score}/{a.maximum}
+              </h3>
+              <p>{a.reflection}</p>
+            </article>
+          ))}
+        {!state.caseAttempts.some((a) => a.userId === id) && <p>Aún no hay prácticas guardadas.</p>}
+      </details>
       <div className="vertical-links">
         <Link to="/mentor/resultados">Ver resultados y satisfacción →</Link>
         <Link to="/mentor/entregas">Revisar actividades →</Link>
@@ -196,6 +258,28 @@ function Review({ submission: s }: { submission: AppState['submissions'][number]
       <div className="two-up">
         <section>
           <h3>La práctica del alumno</h3>
+          <p className="notice">
+            {state.lessons.find((l) => l.id === s.lessonId)?.rubric ||
+              'Criterios pendientes de validar.'}
+            <br />
+            {state.lessons.find((l) => l.id === s.lessonId)?.passScore
+              ? `Nota mínima: ${state.lessons.find((l) => l.id === s.lessonId)?.passScore}/20.`
+              : 'Sin nota mínima configurada.'}
+          </p>
+          {!!s.revisions?.length && (
+            <details className="route-item">
+              <summary>Ver entregas anteriores</summary>
+              {s.revisions.map((r, i) => (
+                <article key={i}>
+                  <h4>Versión {i + 1}</h4>
+                  <p>{r.text}</p>
+                  <p>
+                    {r.feedback} · {r.score ?? 'Sin nota'}
+                  </p>
+                </article>
+              ))}
+            </details>
+          )}
           <blockquote className="preserve">{s.text}</blockquote>
           {s.attachment && (
             <a href={s.attachment.data} download={s.attachment.name} className="quiet">

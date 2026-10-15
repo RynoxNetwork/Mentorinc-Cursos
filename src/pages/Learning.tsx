@@ -10,14 +10,25 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import { useStore } from '../store';
-import { activeAccess, progress, visibleLessons, type CourseLesson } from '../model';
+import {
+  activeAccess,
+  progress,
+  visibleLessons,
+  suggestedFocus,
+  type CourseLesson,
+} from '../model';
 import { Heading, ButtonLink, Badge, Area, Empty, Access, download, getText } from '../ui';
 
 export function RoutePage() {
   const { state, user } = useStore();
   if (!user) return null;
-  const modules = state.modules.filter((m) => !m.archived).sort((a, b) => a.order - b.order);
-  const focus = modules.find((m) => m.id === user.focus);
+  const scopedLessons = visibleLessons(state, user.id);
+  const modules = state.modules
+    .filter((m) => !m.archived && scopedLessons.some((l) => l.moduleId === m.id))
+    .sort((a, b) => a.order - b.order);
+  const focus =
+    modules.find((m) => m.id === user.focus) ??
+    modules.find((m) => m.id === suggestedFocus(state, user));
   return (
     <>
       <Heading
@@ -43,7 +54,7 @@ export function RoutePage() {
             </div>
           )}
           {modules.map((m, i) => {
-            const lessons = state.lessons.filter((l) => l.moduleId === m.id && l.published);
+            const lessons = scopedLessons.filter((l) => l.moduleId === m.id);
             return (
               <details className="route-item" key={m.id} open={m.id === user.focus || undefined}>
                 <summary>
@@ -82,7 +93,9 @@ export function RoutePage() {
           <h3>{user.diagnostic.length ? 'Un siguiente paso para ti' : 'Empieza por conocerte'}</h3>
           <p>
             {user.diagnostic.length
-              ? `Te sugerimos enfocar tu práctica en ${focus?.title || 'El Yo'}. Puedes explorar toda la ruta y ajustarla con tu mentor.`
+              ? focus
+                ? `Te sugerimos enfocar tu práctica en ${focus.title}. Puedes explorar toda la ruta y ajustarla con tu mentor.`
+                : 'Conversa con tu mentor para definir el siguiente paso cuando tu temario esté disponible.'
               : 'Comparte tu experiencia, tu estilo comercial y cómo te sientes hoy.'}
           </p>
           <ButtonLink to={user.diagnostic.length ? '/consultas' : '/diagnostico'}>
@@ -106,8 +119,8 @@ export function RoutePage() {
 
 export function LessonPage() {
   const { id } = useParams();
-  const { state } = useStore();
-  const lesson = state.lessons.find(
+  const { state, user } = useStore();
+  const lesson = visibleLessons(state, user?.id).find(
     (l) => l.id === id && l.published && !state.modules.find((m) => m.id === l.moduleId)?.archived,
   );
   return (
@@ -133,8 +146,13 @@ function Lesson({ lesson: l }: { lesson: CourseLesson }) {
     [attachment, setAttachment] = useState<{ name: string; data: string } | null>(null),
     [fileError, setFileError] = useState(''),
     [videoError, setVideoError] = useState(false);
-  const submission = state.submissions.find((s) => s.userId === user?.id && s.lessonId === l.id);
-  const lessons = visibleLessons(state),
+  const submission = state.submissions.find(
+    (s) =>
+      s.userId === user?.id &&
+      s.lessonId === l.id &&
+      (!s.purchaseId || s.purchaseId === activeAccess(state, user?.id || '')?.id),
+  );
+  const lessons = visibleLessons(state, user?.id),
     index = lessons.findIndex((x) => x.id === l.id),
     next = lessons[index + 1];
   const done = user?.completed.includes(l.id);
@@ -233,6 +251,12 @@ function Lesson({ lesson: l }: { lesson: CourseLesson }) {
                   incorporación.
                 </p>
               )}
+              {l.transcript && (
+                <details className="route-item">
+                  <summary>Texto equivalente / transcripción</summary>
+                  <p className="preserve">{l.transcript}</p>
+                </details>
+              )}
               <section className="quiz">
                 <h2>Qué te llevas de esta idea</h2>
                 <p>{l.question}</p>
@@ -241,11 +265,13 @@ function Lesson({ lesson: l }: { lesson: CourseLesson }) {
                     e.preventDefault();
                     if (
                       run(
-                        { type: 'complete', lessonId: l.id, answer: answer ?? -1 },
-                        '¡Lección completada! Ahora puedes compartir tu práctica.',
+                        { type: 'quizAttempt', lessonId: l.id, answer: answer ?? -1 },
+                        answer === l.correct
+                          ? '¡Lección completada! Ahora puedes compartir tu práctica.'
+                          : 'Intento guardado. Revisa la idea y vuelve a intentarlo.',
                       )
                     )
-                      setTab('actividad');
+                      if (answer === l.correct) setTab('actividad');
                   }}
                 >
                   <fieldset disabled={done}>
@@ -279,6 +305,15 @@ function Lesson({ lesson: l }: { lesson: CourseLesson }) {
             <>
               <h2>Ahora llévalo a tu realidad</h2>
               <p className="lead">{l.activity}</p>
+              <details className="route-item" open>
+                <summary>Criterios de evaluación</summary>
+                <p>{l.rubric || 'Criterios pendientes de confirmar por Mentorinc.'}</p>
+                <p>
+                  {l.passScore
+                    ? `Nota mínima para aprobar: ${l.passScore}/20.`
+                    : 'Sin nota mínima configurada; el mentor revisa la actividad.'}
+                </p>
+              </details>
               {submission && (
                 <>
                   <div className="submission">
@@ -308,6 +343,25 @@ function Lesson({ lesson: l }: { lesson: CourseLesson }) {
                     </div>
                   )}
                 </>
+              )}
+              {!!submission?.revisions?.length && (
+                <details className="route-item">
+                  <summary>Versiones anteriores de mi actividad</summary>
+                  {submission.revisions.map((r, i) => (
+                    <article key={i}>
+                      <h3>Entrega {i + 1}</h3>
+                      <p className="preserve">{r.text}</p>
+                      {r.attachment && (
+                        <a download={r.attachment.name} href={r.attachment.data}>
+                          {r.attachment.name}
+                        </a>
+                      )}
+                      <p>
+                        {r.feedback} {r.score !== null ? ` · ${r.score}/20` : ''}
+                      </p>
+                    </article>
+                  ))}
+                </details>
               )}
               {submission?.status !== 'aprobada' && (
                 <form
@@ -385,7 +439,7 @@ function Lesson({ lesson: l }: { lesson: CourseLesson }) {
                   rel="noopener noreferrer"
                 >
                   <FileText size={23} />
-                  <span>Recurso complementario</span>
+                  <span>{l.resourceName || 'Recurso complementario'}</span>
                   <ArrowRight size={18} />
                 </a>
               )}
@@ -422,6 +476,19 @@ function Lesson({ lesson: l }: { lesson: CourseLesson }) {
                 {user?.completed.includes(x.id) && <CheckCircle2 size={17} />}
               </Link>
             ))}
+          <details className="route-item">
+            <summary>Mis intentos de esta lección</summary>
+            {state.quizAttempts
+              .filter((a) => a.userId === user?.id && a.lessonId === l.id)
+              .slice()
+              .reverse()
+              .map((a) => (
+                <p key={a.id}>
+                  {a.answer} · {a.correct ? 'Correcto' : 'Por revisar'}
+                </p>
+              ))}
+          </details>
+          <Link to="/practica">Practicar con casos →</Link>
           <p className="soft">
             Completar la lección y recibir feedback son dos pasos distintos de tu práctica.
           </p>

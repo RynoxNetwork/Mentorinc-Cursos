@@ -1,3 +1,4 @@
+import { Recognition, LearningHistory } from './Experience';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
@@ -45,7 +46,13 @@ export function Diagnostic() {
               run(
                 initial
                   ? { type: 'onboarding', context, goal }
-                  : { type: 'diagnostic', context, goal, values },
+                  : {
+                      type: 'diagnostic',
+                      context,
+                      goal,
+                      values,
+                      accepted: new FormData(form).get('accepted') === 'on',
+                    },
                 initial
                   ? 'Contexto actualizado. Tu punto de partida se conserva.'
                   : 'Tu punto de partida está guardado',
@@ -112,6 +119,17 @@ export function Diagnostic() {
                   onChange={(n) => setValues(values.map((v, j) => (i === j ? n : v)))}
                 />
               ))}
+              <label className="policy-check">
+                <input type="checkbox" name="accepted" required />
+                <span>
+                  Acepto guardar estas respuestas ficticias para orientar mi recorrido y
+                  compartirlas con mi mentor dentro de esta demostración.{' '}
+                  <Link to="/politicas/privacidad" target="_blank">
+                    Ver privacidad
+                  </Link>
+                  .
+                </span>
+              </label>
             </section>
           )}
           <button className="action" type="submit">
@@ -150,7 +168,9 @@ export function Results() {
       />
     );
   const balance = sessionBalance(state, [user.id]);
-  const remaining = visibleLessons(state).filter((l) => !user.completed.includes(l.id)).length;
+  const remaining = visibleLessons(state, user.id).filter(
+    (l) => !user.completed.includes(l.id),
+  ).length;
   const ready = canFinish(state, user);
   return (
     <>
@@ -164,6 +184,7 @@ export function Results() {
       >
         Reconoce tus avances, lo que quieres seguir practicando y cómo fue tu experiencia.
       </Heading>
+      <Recognition />
       <div className="journey-layout">
         <Comparison user={user} />
         <aside className="journey-next">
@@ -179,7 +200,11 @@ export function Results() {
               <p>
                 {ready
                   ? 'Ya completaste las lecciones. Vuelve a las mismas cuatro preguntas para reconocer tu cambio.'
-                  : `La evaluación final se habilita al completar las lecciones publicadas. Te faltan ${remaining}.`}
+                  : !activeAccess(state, user.id)
+                    ? 'Revisa la vigencia y aprobación de tu acceso para cerrar el recorrido.'
+                    : remaining
+                      ? `Te faltan ${remaining} lecciones. Tu programa también puede requerir actividades aprobadas.`
+                      : 'Ya completaste las lecciones. Falta la aprobación de tus actividades por el mentor; revisa si tienes ajustes pendientes.'}
               </p>
               {ready ? (
                 <ButtonLink to="/evaluacion-final">Hacer evaluación final</ButtonLink>
@@ -217,6 +242,7 @@ export function Results() {
           </div>
         </aside>
       </div>
+      <LearningHistory />
     </>
   );
 }
@@ -330,7 +356,7 @@ export function SatisfactionPage() {
   return (
     <>
       <Heading title="Tu experiencia nos ayuda a crecer">
-        Una respuesta por alumno. Puedes corregirla después sin duplicar los resultados.
+        Una respuesta por recorrido. Puedes corregirla después sin duplicar los resultados.
       </Heading>
       <div className="split">
         <form

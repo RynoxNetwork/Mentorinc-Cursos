@@ -1,3 +1,5 @@
+import { PolicyCheck } from './Experience';
+import { DataImport } from './Transfer';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -9,13 +11,21 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import { useStore } from '../store';
-import { activeAccess, progress, visibleLessons, money, dateLabel, STORE_KEY } from '../model';
+import {
+  activeAccess,
+  progress,
+  visibleLessons,
+  programLessons,
+  money,
+  dateLabel,
+  STORE_KEY,
+} from '../model';
 import { Heading, ButtonLink, Badge, Field, Area, Empty, Avatar, download, getText } from '../ui';
 
 export function Home() {
   const { state, user } = useStore();
   const access = user && activeAccess(state, user.id);
-  const next = visibleLessons(state).find((l) => !user?.completed.includes(l.id));
+  const next = visibleLessons(state, user?.id).find((l) => !user?.completed.includes(l.id));
   const mentor = state.users.find((u) => u.id === user?.mentorId);
   return (
     <>
@@ -34,7 +44,7 @@ export function Home() {
           <p className="lead">
             Descubre tu forma de conectar, comunicar y construir acuerdos. Con un mentor a tu lado.
           </p>
-          <ButtonLink to={access ? '/ruta' : user ? '/programas' : '/registro'}>
+          <ButtonLink to={access ? '/ruta' : '/programas'}>
             {access ? 'Continuar mi ruta' : 'Encuentra tu programa'}
           </ButtonLink>
         </div>
@@ -141,9 +151,11 @@ export function Home() {
               <p className="soft">
                 Haz espacio para una pausa y una forma de crecer que puedas sostener.
               </p>
-              <Link to="/leccion/bien-1" className="quiet">
-                Explorar mentalidad y bienestar →
-              </Link>
+              {visibleLessons(state, user.id).some((l) => l.id === 'bien-1') && (
+                <Link to="/leccion/bien-1" className="quiet">
+                  Explorar mentalidad y bienestar →
+                </Link>
+              )}
             </div>
           </section>
         </>
@@ -200,7 +212,7 @@ export function Programs({ embedded = false }: { embedded?: boolean }) {
               </p>
               <ul className="check-list">
                 <li>
-                  <Check size={18} /> Ruta con {visibleLessons(state).length} lecciones
+                  <Check size={18} /> Ruta con {programLessons(state, p.id).length} lecciones
                 </li>
                 <li>
                   <Check size={18} /> Actividades y feedback
@@ -220,12 +232,8 @@ export function Programs({ embedded = false }: { embedded?: boolean }) {
                 <button
                   className="action"
                   onClick={() => {
-                    if (!user) {
-                      navigate('/registro');
-                      return;
-                    }
-                    if (run({ type: 'purchase', programId: p.id }, 'Solicitud creada'))
-                      navigate('/compras');
+                    if (run({ type: 'selectProgram', programId: p.id }, ''))
+                      navigate(`/programas/${p.id}`);
                   }}
                 >
                   Elegir {p.name}
@@ -325,7 +333,12 @@ export function Auth({
             if (
               run(
                 register
-                  ? { type: 'register', name: getText(form, 'name'), email: getText(form, 'email') }
+                  ? {
+                      type: 'register',
+                      name: getText(form, 'name'),
+                      email: getText(form, 'email'),
+                      accepted: new FormData(form).get('accepted') === 'on',
+                    }
                   : { type: 'sendLink', email: getText(form, 'email') },
                 '',
               )
@@ -353,6 +366,13 @@ export function Auth({
           <p className="support-note">
             Acceso por enlace simulado. Usa datos de prueba, no contraseñas reales.
           </p>
+          {register && <PolicyCheck />}
+          {state.pendingProgramId && (
+            <p className="notice">
+              Continuarás con {state.programs.find((p) => p.id === state.pendingProgramId)?.name}.
+              Tu selección está guardada.
+            </p>
+          )}
           <button className="action full" type="submit">
             {register ? 'Crear cuenta' : 'Crear enlace de acceso'}
             <ArrowRight size={18} />
@@ -433,7 +453,13 @@ export function Mailbox() {
                           m.kind === 'confirm' ? 'Correo confirmado' : 'Sesión iniciada',
                         )
                       )
-                        navigate(m.kind === 'confirm' ? '/diagnostico' : '/');
+                        navigate(
+                          state.pendingProgramId
+                            ? `/programas/${state.pendingProgramId}`
+                            : m.kind === 'confirm'
+                              ? '/diagnostico'
+                              : '/',
+                        );
                     }}
                   >
                     {m.kind === 'confirm' ? 'Confirmar mi correo' : 'Entrar a mi cuenta'}
@@ -488,6 +514,7 @@ export function Account() {
           <div className="vertical-links">
             <Link to="/diagnostico">Revisar mi punto de partida →</Link>
             <Link to="/compras">Compras y acceso →</Link>
+            <Link to="/soporte">Ayuda con mi cuenta →</Link>
             <Link to="/correo">Correo de prueba →</Link>
           </div>
         </aside>
@@ -538,6 +565,9 @@ export function Purchases() {
             </div>
             <p>
               {p.sessions} sesiones de {p.minutes} minutos · Aula y acompañamiento
+              {p.expiresAt
+                ? ` · Acceso hasta ${dateLabel(p.expiresAt)}`
+                : ' · Sin vencimiento configurado'}
             </p>
             {p.approval === 'pendiente' &&
             p.payment !== 'confirmado' &&
@@ -585,6 +615,9 @@ export function Purchases() {
                 Esta solicitud está cerrada y no habilita el acceso. Puedes elegir otro programa.
               </div>
             )}
+            <p>
+              <Link to="/soporte">Solicitar ayuda con esta compra →</Link>
+            </p>
           </article>
         ))
       )}
@@ -674,6 +707,7 @@ export function Settings() {
               Exportar almacenamiento original
             </button>
           </div>
+          <DataImport />
           <div className="section-spaced">
             <h2>Volver al inicio</h2>
             <p className="soft">

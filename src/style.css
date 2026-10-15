@@ -2703,3 +2703,153 @@ form > .action {
     scroll-behavior: auto !important;
   }
 }
+.reading-panel {
+  max-width: 820px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  padding: 30px;
+  line-height: 1.7;
+}
+.reading-panel p,
+.thread p,
+.readiness-row p {
+  overflow-wrap: anywhere;
+}
+.policy-check {
+  margin: 20px 0;
+}
+.policy-check label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  line-height: 1.55;
+}
+.policy-check input {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin-top: 3px;
+}
+.policy-check p {
+  margin: 10px 0;
+}
+.case-step {
+  min-width: 0;
+  border: 0;
+  padding: 20px 0;
+  margin: 0 0 15px;
+  border-bottom: 1px solid var(--line);
+}
+.case-step legend {
+  font-size: 19px;
+  font-weight: 600;
+  max-width: 100%;
+}
+.case-step:disabled {
+  opacity: 0.55;
+}
+.case-step .choice {
+  align-items: flex-start;
+}
+.case-step .choice input {
+  margin-top: 4px;
+}
+.recognition {
+  padding: 28px;
+  margin: 0 0 32px;
+  border-radius: 28px;
+  background: #f4effc;
+}
+.recognition h2 {
+  margin-top: 0;
+}
+.award {
+  padding: 22px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.65);
+}
+.award.earned {
+  background: #dcfaf3;
+}
+.award > span:first-child {
+  font-size: 32px;
+  color: var(--violet);
+}
+.award h3 {
+  margin: 8px 0;
+}
+.award p {
+  margin: 8px 0 15px;
+}
+.help-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.route-item ol,
+.route-item ul {
+  padding: 0 24px 20px 40px;
+}
+.route-item li {
+  margin: 12px 0;
+  line-height: 1.65;
+}
+.readiness-row {
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding: 18px 0;
+}
+.readiness-row h3 {
+  margin: 0 0 5px;
+}
+.readiness-row p {
+  margin: 0;
+}
+.readiness-row .badge {
+  flex-shrink: 0;
+}
+.navigation {
+  flex-wrap: wrap;
+  column-gap: 22px;
+  row-gap: 6px;
+}
+.bottom > div {
+  flex-wrap: wrap;
+}
+.journey-next > a,
+.aside > a {
+  display: inline-flex;
+  margin: 10px 0;
+}
+@media (max-width: 760px) {
+  .reading-panel {
+    padding: 22px 18px;
+  }
+  .recognition {
+    padding: 22px 18px;
+  }
+  .recognition .three-up {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .award {
+    padding: 18px;
+  }
+  .readiness-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .help-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .bottom > div {
+    gap: 12px 20px;
+  }
+}

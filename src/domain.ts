@@ -1,4 +1,10 @@
 import {
+  executeOperation,
+  operationTypes,
+  recordConsent,
+  type OperationsCommand,
+} from './operations';
+import {
   type AppState,
   type CourseLesson,
   type CourseModule,
@@ -14,6 +20,9 @@ import {
   Satisfaction,
   type LearnerContext,
   activeAccess,
+  programLessons,
+  visibleLessons,
+  suggestedFocus,
   availableSlots,
   now,
   safeUrl,
@@ -22,14 +31,16 @@ import {
 import { canFinish, hasAttended } from './insights';
 
 export type Command =
+  | OperationsCommand
   | { type: 'demo'; userId: string }
   | { type: 'logout' }
-  | { type: 'register'; name: string; email: string }
+  | { type: 'register'; name: string; email: string; accepted?: boolean }
   | { type: 'sendLink'; email: string }
   | { type: 'useLink'; id: string }
   | { type: 'profile'; name: string; goal: string }
   | {
       type: 'diagnostic';
+      accepted?: boolean;
       values: number[];
       goal: string;
       context: Omit<LearnerContext, 'updatedAt'>;
@@ -43,7 +54,7 @@ export type Command =
       mentoring: number | null;
       comment: string;
     }
-  | { type: 'purchase'; programId: string }
+  | { type: 'purchase'; programId: string; accepted?: boolean }
   | { type: 'payment'; id: string; status: 'confirmado' | 'fallido' | 'reembolsado' }
   | { type: 'approval'; id: string; status: 'aprobado' | 'rechazado' }
   | { type: 'complete'; lessonId: string; answer: number }
@@ -109,6 +120,7 @@ export function execute(current: AppState, command: Command): AppState {
     return s;
   }
   if (c.type === 'register') {
+    requireThat(c.accepted, 'Lee y acepta las condiciones de esta demostración.');
     const name = clean(c.name, 'Nombre', 2, 80),
       email = c.email.trim().toLowerCase();
     requireThat(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), 'Escribe un correo válido.');
@@ -130,6 +142,7 @@ export function execute(current: AppState, command: Command): AppState {
         focus: 'yo',
         diagnostic: [],
         completed: [],
+        registeredAt: now(),
       }),
     );
     s.mails.unshift({
@@ -142,6 +155,7 @@ export function execute(current: AppState, command: Command): AppState {
       expires: new Date(Date.now() + 3600000).toISOString(),
     });
     s.session = id;
+    recordConsent(s, id, 'registro');
     return State.parse(s);
   }
   if (c.type === 'sendLink') {
@@ -176,6 +190,7 @@ export function execute(current: AppState, command: Command): AppState {
     s.session = u.id;
     return s;
   }
+  if (operationTypes.includes(c.type)) return executeOperation(s, c as OperationsCommand);
   const actor = s.users.find((u) => u.id === s.session);
   requireThat(actor?.active, 'Inicia sesión para continuar.');
   const admin = () =>
@@ -197,7 +212,10 @@ export function execute(current: AppState, command: Command): AppState {
     const l = s.lessons.find(
       (l) => l.id === id && l.published && !s.modules.find((m) => m.id === l.moduleId)?.archived,
     );
-    requireThat(l, 'Esta lección no está disponible.');
+    requireThat(
+      l && visibleLessons(s, actor.id).some((x) => x.id === id),
+      'Esta lección no está disponible en tu programa.',
+    );
     return l;
   };
   switch (c.type) {
@@ -207,6 +225,7 @@ export function execute(current: AppState, command: Command): AppState {
       break;
     case 'diagnostic': {
       learner();
+      requireThat(c.accepted === true, 'Confirma el uso de tus respuestas antes de continuar.');
       requireThat(
         c.values.length === 4 && c.values.every((n) => Number.isInteger(n) && n >= 1 && n <= 5),
         'Responde las cuatro preguntas.',
@@ -225,7 +244,8 @@ export function execute(current: AppState, command: Command): AppState {
         goal: actor.goal,
         reflection: '',
       };
-      actor.focus = ['yo', 'com', 'pro', 'neg'][c.values.indexOf(Math.min(...c.values))];
+      recordConsent(s, actor.id, 'diagnostico');
+      actor.focus = suggestedFocus(s, actor);
       notify(
         s,
         actor.id,
@@ -302,6 +322,7 @@ export function execute(current: AppState, command: Command): AppState {
     }
     case 'purchase': {
       learner();
+      requireThat(c.accepted, 'Lee y acepta las condiciones del programa de prueba.');
       requireThat(
         !activeAccess(s, actor.id),
         'Ya tienes un programa activo. Consulta con administración para cambiarlo.',
@@ -314,11 +335,22 @@ export function execute(current: AppState, command: Command): AppState {
       );
       const p = s.programs.find((p) => p.id === c.programId && p.published);
       requireThat(p, 'Este programa no está disponible.');
+      requireThat(
+        programLessons(s, p.id).length > 0,
+        'Este programa aún no tiene lecciones publicadas.',
+      );
+      recordConsent(s, actor.id, 'compra');
+      s.pendingProgramId = '';
       s.purchases.unshift({
         id: uid(),
         userId: actor.id,
         programId: p.id,
         amount: p.price,
+        lessonIds: programLessons(s, p.id).map((l) => l.id),
+        requireReviews: p.requireReviews ?? false,
+        accessDays: p.accessDays ?? 0,
+        approvedAt: null,
+        expiresAt: null,
         sessions: p.sessions,
         minutes: p.minutes,
         payment: 'pendiente',
@@ -370,10 +402,36 @@ export function execute(current: AppState, command: Command): AppState {
               x.id !== p.id &&
               x.userId === p.userId &&
               x.payment === 'confirmado' &&
-              x.approval === 'aprobado',
+              x.approval === 'aprobado' &&
+              (!x.expiresAt || Date.parse(x.expiresAt) > Date.now()),
           ),
           'El alumno ya tiene otro programa activo.',
         );
+      }
+      if (c.status === 'aprobado' && p.approval !== 'aprobado') {
+        const student = s.users.find((u) => u.id === p.userId)!;
+        if (student.journeyId && student.journeyId !== p.id) {
+          (student.history ??= []).push({
+            purchaseId: student.journeyId,
+            completed: [...student.completed],
+            initialAssessment: student.initialAssessment,
+            finalAssessment: student.finalAssessment,
+            satisfaction: student.satisfaction,
+          });
+          student.completed = [];
+          student.firstLearningAt = null;
+          student.initialAssessment = null;
+          student.finalAssessment = null;
+          student.satisfaction = null;
+          student.diagnostic = [];
+        }
+        student.journeyId = p.id;
+        if (!p.approvedAt) {
+          p.approvedAt = now();
+          p.expiresAt = p.accessDays
+            ? new Date(Date.now() + p.accessDays * 86400000).toISOString()
+            : null;
+        }
       }
       p.approval = c.status;
       if (c.status === 'rechazado')
@@ -396,13 +454,19 @@ export function execute(current: AppState, command: Command): AppState {
       const l = lessonFor(c.lessonId);
       requireThat(c.answer === l.correct, 'Revisa la idea central y vuelve a intentarlo.');
       if (!actor.completed.includes(l.id)) actor.completed.push(l.id);
+      if (!actor.firstLearningAt) actor.firstLearningAt = now();
       break;
     }
     case 'submit': {
-      access();
+      const purchase = access();
       const l = lessonFor(c.lessonId);
       const text = clean(c.text, 'Tu actividad', 20, 5000);
-      const previous = s.submissions.find((x) => x.userId === actor.id && x.lessonId === l.id);
+      const previous = s.submissions.find(
+        (x) =>
+          x.userId === actor.id &&
+          x.lessonId === l.id &&
+          (!x.purchaseId || x.purchaseId === purchase.id),
+      );
       requireThat(previous?.status !== 'aprobada', 'Esta actividad ya fue aprobada.');
       if (c.attachment)
         requireThat(
@@ -413,6 +477,7 @@ export function execute(current: AppState, command: Command): AppState {
           'Adjunta un PDF, TXT o imagen de hasta 500 KB.',
         );
       const payload = {
+        purchaseId: purchase.id,
         text,
         attachment: c.attachment,
         status: 'pendiente' as const,
@@ -420,8 +485,18 @@ export function execute(current: AppState, command: Command): AppState {
         score: null,
         date: now(),
       };
-      if (previous) Object.assign(previous, payload);
-      else s.submissions.push({ id: uid(), userId: actor.id, lessonId: l.id, ...payload });
+      if (previous) {
+        (previous.revisions ??= []).push({
+          text: previous.text,
+          attachment: previous.attachment,
+          feedback: previous.feedback,
+          score: previous.score,
+          date: previous.date,
+          reviewedBy: previous.reviewedBy,
+          reviewedAt: previous.reviewedAt,
+        });
+        Object.assign(previous, payload, { reviewedBy: undefined, reviewedAt: undefined });
+      } else s.submissions.push({ id: uid(), userId: actor.id, lessonId: l.id, ...payload });
       if (actor.mentorId)
         notify(
           s,
@@ -440,6 +515,14 @@ export function execute(current: AppState, command: Command): AppState {
         'La calificación debe estar entre 0 y 20.',
       );
       sub.feedback = clean(c.feedback, 'Feedback', 10, 3000);
+      const lesson = s.lessons.find((l) => l.id === sub.lessonId);
+      requireThat(
+        c.status !== 'aprobada' || c.score >= (lesson?.passScore ?? 0),
+        `Para aprobar se requieren ${lesson?.passScore ?? 0} puntos.`,
+      );
+      sub.rubric = lesson?.rubric || '';
+      sub.reviewedBy = actor.id;
+      sub.reviewedAt = now();
       sub.score = c.score;
       sub.status = c.status;
       notify(
@@ -477,7 +560,7 @@ export function execute(current: AppState, command: Command): AppState {
         t && (t.userId === actor.id || canMentor(t.userId)),
         'No puedes responder esta consulta.',
       );
-      if (actor.id === t.userId) access();
+      if (actor.id === t.userId) learner();
       requireThat(t.status !== 'resuelta', 'Reabre la consulta antes de responder.');
       t.messages.push({
         id: uid(),
@@ -626,7 +709,7 @@ export function execute(current: AppState, command: Command): AppState {
       requireThat(canMentor(c.userId), 'No puedes ajustar la ruta de este alumno.');
       const u = s.users.find((u) => u.id === c.userId);
       requireThat(
-        u && s.modules.some((m) => m.id === c.focus && !m.archived),
+        u && visibleLessons(s, u.id).some((l) => l.moduleId === c.focus),
         'Elige un módulo disponible.',
       );
       u.focus = c.focus;
@@ -676,6 +759,15 @@ export function execute(current: AppState, command: Command): AppState {
     case 'saveProgram': {
       admin();
       const value = Program.parse(c.program);
+      requireThat(
+        !value.moduleIds ||
+          value.moduleIds.every((id) => s.modules.some((m) => m.id === id && !m.archived)),
+        'Selecciona módulos disponibles.',
+      );
+      requireThat(
+        !value.published || !value.moduleIds || value.moduleIds.length > 0,
+        'Selecciona al menos un módulo antes de publicar.',
+      );
       const i = s.programs.findIndex((x) => x.id === value.id);
       if (i < 0) s.programs.push(value);
       else s.programs[i] = value;

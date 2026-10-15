@@ -83,6 +83,16 @@ function Overview() {
           <span>actividades por revisar</span>
         </div>
       </div>
+      <div className="notice">
+        <strong>
+          Activación del aprendizaje:{' '}
+          {active.filter((u) => u.firstLearningAt || u.completed.length > 0).length}/{active.length}
+        </strong>
+        <p>
+          Alumnos con acceso vigente que completaron al menos una lección. Fechas anteriores a esta
+          versión pueden no estar disponibles.
+        </p>
+      </div>
       <div className="three-up">
         {[
           ['/admin/personas', 'Personas', 'Asigna mentores y gestiona roles.', Users],
@@ -419,7 +429,7 @@ function ProgramEditor({
   onSaved?: () => void;
   open?: boolean;
 }) {
-  const { run } = useStore();
+  const { state, run } = useStore();
   return (
     <details className="editor-panel" open={open || undefined}>
       <summary>
@@ -444,6 +454,10 @@ function ProgramEditor({
                   name: getText(f, 'name'),
                   description: getText(f, 'description'),
                   price: Number(getText(f, 'price')),
+                  moduleIds: new FormData(f).getAll('modules').map(String),
+                  accessDays: Number(getText(f, 'accessDays')),
+                  requireReviews: getText(f, 'requireReviews') === 'si',
+                  audience: getText(f, 'audience'),
                   sessions: Number(getText(f, 'sessions')),
                   minutes: Number(getText(f, 'minutes')),
                   published: getText(f, 'published') === 'si',
@@ -496,6 +510,49 @@ function ProgramEditor({
             <option value="60">60 minutos</option>
           </Select>
         </div>
+        <Area
+          label="Para quién es este programa"
+          name="audience"
+          maxLength={500}
+          defaultValue={p.audience || ''}
+        />
+        <fieldset className="case-step">
+          <legend>Módulos incluidos</legend>
+          {state.modules
+            .filter((m) => !m.archived)
+            .map((m) => (
+              <label className="choice" key={m.id}>
+                <input
+                  type="checkbox"
+                  name="modules"
+                  value={m.id}
+                  defaultChecked={!p.moduleIds || p.moduleIds.includes(m.id)}
+                />
+                <span>{m.title}</span>
+              </label>
+            ))}
+        </fieldset>
+        <Field
+          label="Vigencia en días desde aprobación (0 = sin vencimiento)"
+          name="accessDays"
+          type="number"
+          min="0"
+          max="1095"
+          required
+          defaultValue={p.accessDays ?? 0}
+        />
+        <Select
+          label="Requisito para evaluación final"
+          name="requireReviews"
+          defaultValue={p.requireReviews ? 'si' : 'no'}
+        >
+          <option value="no">Completar las lecciones</option>
+          <option value="si">Lecciones y actividades aprobadas</option>
+        </Select>
+        <p className="support-note">
+          Los cambios de temario, vigencia y requisitos afectan nuevas inscripciones. Las anteriores
+          conservan su configuración.
+        </p>
         <Select label="Visibilidad" name="published" defaultValue={p.published ? 'si' : 'no'}>
           <option value="si">Publicado en el catálogo</option>
           <option value="no">Borrador / archivado</option>
@@ -613,7 +670,7 @@ function ContentAdmin() {
   );
 }
 function ModuleEditor({ value: m, onSaved }: { value: CourseModule; onSaved?: () => void }) {
-  const { run } = useStore();
+  const { state, run } = useStore();
   return (
     <details className="editor-panel" open={!m.title || undefined}>
       <summary>
@@ -700,6 +757,11 @@ function LessonEditor({ value: l, onSaved }: { value: CourseLesson; onSaved: () 
                 correct: Number(getText(f, 'correct')),
                 video: getText(f, 'video'),
                 resource: getText(f, 'resource'),
+                resourceName: getText(f, 'resourceName'),
+                transcript: getText(f, 'transcript'),
+                rubric: getText(f, 'rubric'),
+                passScore: Number(getText(f, 'passScore')),
+                contentStatus: getText(f, 'contentStatus') as 'muestra',
                 published: getText(f, 'published') === 'si',
               },
             },
@@ -763,6 +825,29 @@ function LessonEditor({ value: l, onSaved }: { value: CourseLesson; onSaved: () 
         maxLength={1000}
         required
       />
+      <Area
+        label="Rúbrica / criterios de evaluación"
+        name="rubric"
+        maxLength={3000}
+        defaultValue={l.rubric || ''}
+      />
+      <Field
+        label="Nota mínima para aprobar actividad (0 a 20)"
+        name="passScore"
+        type="number"
+        min="0"
+        max="20"
+        required
+        defaultValue={l.passScore ?? 0}
+      />
+      <Select
+        label="Validación académica del contenido"
+        name="contentStatus"
+        defaultValue={l.contentStatus || 'muestra'}
+      >
+        <option value="muestra">Muestra pendiente de Mentorinc</option>
+        <option value="validado">Contenido validado por Mentorinc</option>
+      </Select>
       <h3 className="section-spaced">Comprobación de aprendizaje</h3>
       <Field label="Pregunta" name="question" defaultValue={l.question} minLength={5} required />
       {[0, 1, 2].map((i) => (
@@ -795,6 +880,18 @@ function LessonEditor({ value: l, onSaved }: { value: CourseLesson; onSaved: () 
         type="url"
         defaultValue={l.resource}
         placeholder="https://…"
+      />
+      <Field
+        label="Nombre del recurso"
+        name="resourceName"
+        maxLength={120}
+        defaultValue={l.resourceName || ''}
+      />
+      <Area
+        label="Transcripción o texto equivalente del video"
+        name="transcript"
+        maxLength={20000}
+        defaultValue={l.transcript || ''}
       />
       <p className="support-note">
         El reproductor admite archivos de video directos. Los enlaces de páginas de YouTube o Vimeo
