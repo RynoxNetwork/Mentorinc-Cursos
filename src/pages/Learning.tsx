@@ -23,8 +23,8 @@ export function RoutePage() {
       <Heading
         title="Tu ruta, a tu ritmo"
         action={
-          <ButtonLink to="/diagnostico" secondary>
-            Mi punto de partida
+          <ButtonLink to="/resultados" secondary>
+            Mi avance y resultados
           </ButtonLink>
         }
       >
@@ -83,11 +83,21 @@ export function RoutePage() {
           <p>
             {user.diagnostic.length
               ? `Te sugerimos enfocar tu práctica en ${focus?.title || 'El Yo'}. Puedes explorar toda la ruta y ajustarla con tu mentor.`
-              : 'Responde cuatro preguntas y comparte qué quieres lograr.'}
+              : 'Comparte tu experiencia, tu estilo comercial y cómo te sientes hoy.'}
           </p>
           <ButtonLink to={user.diagnostic.length ? '/consultas' : '/diagnostico'}>
             {user.diagnostic.length ? 'Conversar con mi mentor' : 'Definir mi punto de partida'}
           </ButtonLink>
+          <div className="session-mini">
+            <h3>{progress(state, user) === 100 ? 'Cierra tu recorrido' : 'Observa tu avance'}</h3>
+            <p>
+              Conserva tu punto de partida y compáralo con tu evaluación final al completar las
+              lecciones.
+            </p>
+            <Link className="quiet" to="/resultados">
+              Ver mis resultados →
+            </Link>
+          </div>
         </aside>
       </div>
     </>

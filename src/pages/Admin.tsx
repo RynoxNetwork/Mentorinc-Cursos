@@ -38,7 +38,15 @@ function Overview() {
   );
   return (
     <>
-      <Heading title="Una vista de todo el recorrido">
+      <Heading
+        title="Una vista de todo el recorrido"
+        action={
+          <Link className="action secondary" to="/admin/resultados">
+            Resultados y mentoría
+            <ArrowRight size={18} />
+          </Link>
+        }
+      >
         Administra los programas, acompaña al equipo y habilita cada nuevo comienzo.
       </Heading>
       <section className="admin-hero">

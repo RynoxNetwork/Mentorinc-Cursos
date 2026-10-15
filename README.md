@@ -24,7 +24,9 @@ npm run preview
 ## Recorridos implementados
 
 - Sitio público, modelo de Mentorinc, catálogo Junior/Senior/Master y recuperación de acceso por enlace local.
-- Registro y confirmación de correo de prueba, perfil y diagnóstico orientativo de cuatro áreas. La recomendación utiliza reglas locales y es revisable por el mentor; no ejecuta IA ni presenta validez clínica, DISC o PPDC.
+- Registro y confirmación de correo de prueba, perfil y onboarding con experiencia, contexto de venta, estilo propio y objetivo. Diagnóstico orientativo de cuatro áreas conservado como medición inicial. La recomendación utiliza reglas locales y es revisable por el mentor; no ejecuta IA ni presenta validez clínica, DISC o PPDC.
+- Comparación inicial/final por área, fecha y reflexión. La evaluación final se habilita con un programa aprobado y todas las lecciones publicadas completas; guardar el cierre no reemplaza la medición inicial.
+- Encuesta de satisfacción al cierre, editable sin duplicar respuestas. La valoración de mentoría solo se solicita cuando hay sesiones realizadas; los reportes muestran promedios y cantidad de respuestas, con estados vacíos explícitos.
 - Compra simulada con pago pendiente, confirmado, fallido o reembolsado. El acceso exige pago confirmado **y** aprobación manual de administración.
 - Aula con cinco módulos, quince lecciones distintas, guías interactivas, comprobaciones de aprendizaje, progreso, recursos descargables y reproductor para archivos de video HTTPS incorporados desde administración.
 - Actividades con texto y adjuntos PDF/TXT/imagen de hasta 500 KB; feedback, nota, solicitud de ajustes, reentrega y aprobación.
@@ -32,7 +34,10 @@ npm run preview
 - Agenda por cupos y duración del programa, horario de Lima, reserva, reprogramación, cancelación, enlace externo y registro de sesión realizada. Las reservas impiden solapamientos, incluso entre sesiones de diferente duración.
 - Mentor: alumnos asignados, objetivos, diagnóstico, progreso, foco de la ruta, entregas, feedback, consultas, sesiones y disponibilidad.
 - Administración: métricas derivadas de los datos, personas/roles/mentores/estado, exportación CSV, compras/accesos/reembolsos, programas, módulos, lecciones, evaluaciones, enlaces de recursos, publicación y archivo reversible.
+- Resultados para mentor y administración: comparaciones, satisfacción, cupos aprobados/reservados/realizados/disponibles, cancelaciones y minutos de mentoría; filtros por fecha en Lima y mentor, fichas individuales y exportación CSV. Ver [criterios de medición](docs/MEDICION.md).
 - Persistencia local versionada, sincronización entre pestañas del mismo navegador, exportación JSON y restablecimiento con copia previa. Los datos corruptos se conservan hasta que el usuario los exporte y restablezca explícitamente.
+
+La versión 2 del esquema conserva el almacenamiento existente. Al abrir datos de la versión 1, el último diagnóstico disponible se conserva como referencia inicial con fecha desconocida; no se inventan mediciones previas ni encuestas.
 
 ## Probar los tres espacios
 

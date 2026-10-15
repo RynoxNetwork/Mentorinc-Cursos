@@ -1,6 +1,28 @@
 import { z } from 'zod';
 
 export const Role = z.enum(['alumno', 'mentor', 'admin']);
+export const Scores = z.array(z.number().int().min(1).max(5)).length(4);
+export const Onboarding = z.object({
+  experience: z.enum(['empezando', 'menos-1', '1-3', 'mas-3']),
+  context: z.string().trim().min(10).max(500),
+  style: z.string().trim().min(10).max(500),
+  updatedAt: z.iso.datetime(),
+});
+export const Assessment = z.object({
+  values: Scores,
+  date: z.iso.datetime().nullable(),
+  source: z.enum(['registro', 'anterior']),
+  goal: z.string().max(500),
+  reflection: z.string().max(1000),
+});
+export const Satisfaction = z.object({
+  overall: z.number().int().min(1).max(5),
+  learning: z.number().int().min(1).max(5),
+  mentoring: z.number().int().min(1).max(5).nullable(),
+  comment: z.string().trim().max(1000),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+});
 export const User = z.object({
   id: z.string(),
   name: z.string().min(2).max(80),
@@ -13,6 +35,10 @@ export const User = z.object({
   focus: z.string(),
   diagnostic: z.array(z.number().min(1).max(5)),
   completed: z.array(z.string()),
+  onboarding: Onboarding.nullable().default(null),
+  initialAssessment: Assessment.nullable().default(null),
+  finalAssessment: Assessment.nullable().default(null),
+  satisfaction: Satisfaction.nullable().default(null),
 });
 export const Program = z.object({
   id: z.string(),
@@ -112,7 +138,7 @@ export const Mail = z.object({
   expires: z.string(),
 });
 export const State = z.object({
-  version: z.literal(1),
+  version: z.literal(2),
   users: z.array(User),
   programs: z.array(Program),
   modules: z.array(Module),
@@ -132,7 +158,37 @@ export type CourseLesson = z.infer<typeof Lesson>;
 export type CourseModule = z.infer<typeof Module>;
 export type CourseProgram = z.infer<typeof Program>;
 export type UserRole = z.infer<typeof Role>;
+export type LearnerContext = z.infer<typeof Onboarding>;
+// Keep the same key so existing browsers retain their data after the schema upgrade.
 export const STORE_KEY = 'mentorinc.impulso.v1';
+const LegacyState = State.extend({
+  version: z.literal(1),
+  users: z.array(
+    User.omit({
+      onboarding: true,
+      initialAssessment: true,
+      finalAssessment: true,
+      satisfaction: true,
+    }),
+  ),
+});
+export function parseStoredState(raw: unknown): AppState {
+  if (typeof raw === 'object' && raw !== null && 'version' in raw && raw.version === 1) {
+    const legacy = LegacyState.parse(raw);
+    return State.parse({
+      ...legacy,
+      version: 2,
+      users: legacy.users.map((u) => ({
+        ...u,
+        initialAssessment:
+          u.role === 'alumno' && Scores.safeParse(u.diagnostic).success
+            ? { values: u.diagnostic, date: null, source: 'anterior', goal: u.goal, reflection: '' }
+            : null,
+      })),
+    });
+  }
+  return State.parse(raw);
+}
 export const uid = () => crypto.randomUUID();
 export const now = () => new Date().toISOString();
 export function safeUrl(value: string) {

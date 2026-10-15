@@ -62,4 +62,8 @@ Las capturas de escritorio y móvil y el manifiesto de comprobación quedan en l
 
 ## Pendientes de contenido y etapa posterior
 
+### Ampliación local de medición
+
+Se implementaron comparación inicial/final, satisfacción, métricas de mentoría y onboarding ampliado, conservando Impulso y los datos anteriores. El alcance, fórmulas, migración y pruebas están en [MEDICION.md](MEDICION.md). La suite pasa de 22 a 32 pruebas; el recorrido local y la compilación están comprobados. Los commits se publican por la integración Git existente.
+
 Mentorinc debe definir los videos/materiales finales, precios/cupos definitivos, instrumento y criterios del diagnóstico y reglas operativas de agenda. El editor local permite ajustar el contenido de demostración. Backend, base de datos, autenticación segura, cobros, correo transaccional e IA real quedan expresamente fuera de esta entrega por instrucción de Jose Maria.

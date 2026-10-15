@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { State, STORE_KEY, type AppState } from './model';
+import { parseStoredState, STORE_KEY, type AppState } from './model';
 import { createSeed } from './seed';
 import { execute, type Command } from './domain';
 
@@ -16,7 +16,7 @@ const Context = createContext<Store | null>(null);
 export function loadState(storage: Pick<Storage, 'getItem'>): { state: AppState; error: string } {
   try {
     const raw = storage.getItem(STORE_KEY);
-    return { state: raw ? State.parse(JSON.parse(raw)) : createSeed(), error: '' };
+    return { state: raw ? parseStoredState(JSON.parse(raw)) : createSeed(), error: '' };
   } catch {
     return {
       state: createSeed(),

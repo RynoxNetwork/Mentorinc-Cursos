@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useStore } from '../store';
 import { activeAccess, progress, dateLabel, type AppState } from '../model';
 import { Heading, Badge, Field, Area, Select, Avatar, Empty, getText } from '../ui';
+import { Comparison, ContextSummary } from '../measurement-ui';
 
 export default function Mentor() {
   const { state, user } = useStore();
@@ -149,19 +150,8 @@ function StudentDetail({ id }: { id: string }) {
       <p className="soft">{u.email}</p>
       <h3>Su objetivo</h3>
       <p>{u.goal || 'Todavía no ha definido su objetivo.'}</p>
-      <h3>Punto de partida</h3>
-      {u.diagnostic.length ? (
-        <div className="diagnostic-results">
-          {['El Yo', 'Comunicación', 'Producto', 'Negociación'].map((name, i) => (
-            <div key={name}>
-              <span>{name}</span>
-              <strong>{u.diagnostic[i]}/5</strong>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="soft">Diagnóstico pendiente.</p>
-      )}
+      <ContextSummary user={u} />
+      <Comparison user={u} />
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -183,6 +173,7 @@ function StudentDetail({ id }: { id: string }) {
         <button className="action full">Actualizar ruta</button>
       </form>
       <div className="vertical-links">
+        <Link to="/mentor/resultados">Ver resultados y satisfacción →</Link>
         <Link to="/mentor/entregas">Revisar actividades →</Link>
         <Link to="/consultas">Responder consultas →</Link>
       </div>

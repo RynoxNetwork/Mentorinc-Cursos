@@ -8,12 +8,18 @@ import {
   Module,
   Program,
   State,
+  User,
+  Onboarding,
+  Scores,
+  Satisfaction,
+  type LearnerContext,
   activeAccess,
   availableSlots,
   now,
   safeUrl,
   uid,
 } from './model';
+import { canFinish, hasAttended } from './insights';
 
 export type Command =
   | { type: 'demo'; userId: string }
@@ -22,7 +28,21 @@ export type Command =
   | { type: 'sendLink'; email: string }
   | { type: 'useLink'; id: string }
   | { type: 'profile'; name: string; goal: string }
-  | { type: 'diagnostic'; values: number[]; goal: string }
+  | {
+      type: 'diagnostic';
+      values: number[];
+      goal: string;
+      context: Omit<LearnerContext, 'updatedAt'>;
+    }
+  | { type: 'onboarding'; goal: string; context: Omit<LearnerContext, 'updatedAt'> }
+  | { type: 'finalAssessment'; values: number[]; reflection: string }
+  | {
+      type: 'satisfaction';
+      overall: number;
+      learning: number;
+      mentoring: number | null;
+      comment: string;
+    }
   | { type: 'purchase'; programId: string }
   | { type: 'payment'; id: string; status: 'confirmado' | 'fallido' | 'reembolsado' }
   | { type: 'approval'; id: string; status: 'aprobado' | 'rechazado' }
@@ -97,19 +117,21 @@ export function execute(current: AppState, command: Command): AppState {
       'Este correo ya tiene una cuenta local. Solicita un enlace de acceso.',
     );
     const id = uid();
-    s.users.push({
-      id,
-      name,
-      email,
-      role: 'alumno',
-      mentorId: s.users.find((u) => u.role === 'mentor' && u.active)?.id || '',
-      verified: false,
-      active: true,
-      goal: '',
-      focus: 'yo',
-      diagnostic: [],
-      completed: [],
-    });
+    s.users.push(
+      User.parse({
+        id,
+        name,
+        email,
+        role: 'alumno',
+        mentorId: s.users.find((u) => u.role === 'mentor' && u.active)?.id || '',
+        verified: false,
+        active: true,
+        goal: '',
+        focus: 'yo',
+        diagnostic: [],
+        completed: [],
+      }),
+    );
     s.mails.unshift({
       id: uid(),
       userId: id,
@@ -189,8 +211,20 @@ export function execute(current: AppState, command: Command): AppState {
         c.values.length === 4 && c.values.every((n) => Number.isInteger(n) && n >= 1 && n <= 5),
         'Responde las cuatro preguntas.',
       );
+      requireThat(
+        !actor.initialAssessment,
+        'Tu medición inicial ya está guardada. Puedes actualizar tu contexto sin reemplazarla.',
+      );
       actor.diagnostic = c.values;
       actor.goal = clean(c.goal, 'Objetivo', 10, 500);
+      actor.onboarding = Onboarding.parse({ ...c.context, updatedAt: now() });
+      actor.initialAssessment = {
+        values: [...c.values],
+        date: now(),
+        source: 'registro',
+        goal: actor.goal,
+        reflection: '',
+      };
       actor.focus = ['yo', 'com', 'pro', 'neg'][c.values.indexOf(Math.min(...c.values))];
       notify(
         s,
@@ -199,6 +233,71 @@ export function execute(current: AppState, command: Command): AppState {
         'La sugerencia se basa en tus respuestas y puede ajustarse con tu mentor.',
         '/ruta',
       );
+      break;
+    }
+    case 'onboarding': {
+      learner();
+      actor.goal = clean(c.goal, 'Objetivo', 10, 500);
+      actor.onboarding = Onboarding.parse({ ...c.context, updatedAt: now() });
+      break;
+    }
+    case 'finalAssessment': {
+      access();
+      requireThat(actor.initialAssessment, 'Guarda primero tu punto de partida.');
+      requireThat(!actor.finalAssessment, 'Tu evaluación final ya está guardada.');
+      requireThat(
+        canFinish(s, actor),
+        'Completa todas las lecciones publicadas antes de la evaluación final.',
+      );
+      requireThat(
+        Scores.safeParse(c.values).success,
+        'Responde las cuatro preguntas con valores del 1 al 5.',
+      );
+      actor.finalAssessment = {
+        values: [...c.values],
+        date: now(),
+        source: 'registro',
+        goal: actor.goal,
+        reflection: clean(c.reflection, 'Tu aprendizaje', 10, 1000),
+      };
+      notify(
+        s,
+        actor.id,
+        'Mira cuánto has avanzado',
+        'Tu comparación inicial y final ya está disponible. También puedes compartir tu experiencia.',
+        '/resultados',
+      );
+      if (actor.mentorId)
+        notify(
+          s,
+          actor.mentorId,
+          'Un alumno completó su evaluación final',
+          `${actor.name} ya puede comparar su recorrido.`,
+          '/mentor/resultados',
+        );
+      break;
+    }
+    case 'satisfaction': {
+      access();
+      requireThat(
+        actor.finalAssessment,
+        'Completa tu evaluación final antes de compartir tu experiencia.',
+      );
+      const attended = hasAttended(s, actor.id);
+      requireThat(
+        attended ? c.mentoring !== null : c.mentoring === null,
+        attended
+          ? 'Valora el acompañamiento de las sesiones realizadas.'
+          : 'La valoración de mentoría requiere una sesión realizada.',
+      );
+      actor.satisfaction = Satisfaction.parse({
+        overall: c.overall,
+        learning: c.learning,
+        mentoring: c.mentoring,
+        comment: c.comment.trim(),
+        createdAt: actor.satisfaction?.createdAt ?? now(),
+        updatedAt: now(),
+      });
       break;
     }
     case 'purchase': {

@@ -63,14 +63,22 @@ describe('Recorridos locales de Mentorinc', () => {
     expect(() => execute(next, { type: 'useLink', id: next.mails[0].id })).toThrow('caducó');
   });
   it('diagnóstico deriva el foco de las cuatro respuestas', () => {
-    const s = execute(createSeed(), {
+    const fresh = createSeed();
+    fresh.users[0].initialAssessment = null;
+    const context = {
+      experience: '1-3' as const,
+      context: 'Vendo servicios a empresas.',
+      style: 'Escucho antes de presentar mi propuesta.',
+    };
+    const s = execute(fresh, {
       type: 'diagnostic',
+      context,
       values: [4, 2, 5, 3],
       goal: 'Quiero mejorar mis conversaciones.',
     });
     expect(s.users[0].focus).toBe('com');
     expect(() =>
-      execute(s, { type: 'diagnostic', values: [1], goal: 'Completar mi ruta' }),
+      execute(s, { type: 'diagnostic', values: [1], goal: 'Completar mi ruta', context }),
     ).toThrow('cuatro');
   });
   it('no completa con respuesta incorrecta y completar es idempotente', () => {
@@ -308,7 +316,7 @@ describe('Recorridos locales de Mentorinc', () => {
     expect(loaded.state.users[0].name).toBe('María de prueba');
     const broken = loadState({ getItem: () => '{bad json' });
     expect(broken.error).toContain('no se pudieron abrir');
-    expect(broken.state.version).toBe(1);
+    expect(broken.state.version).toBe(2);
   });
   it('un estado fallido no modifica el estado original', () => {
     const s = createSeed(),

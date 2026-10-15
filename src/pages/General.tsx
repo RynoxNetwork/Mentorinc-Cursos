@@ -59,7 +59,7 @@ export function Home() {
           <div className="progress-summary">
             <strong>{progress(state, user)}% de tu recorrido</strong>
             <progress value={progress(state, user)} max="100" aria-label="Progreso total" />
-            <Link to="/ruta">Ver mi avance →</Link>
+            <Link to="/resultados">Ver mi avance →</Link>
           </div>
           <section className="feature">
             <div>
@@ -70,8 +70,8 @@ export function Home() {
                   'Revisa tus actividades y conversa con tu mentor sobre lo que sigue.'}
               </p>
             </div>
-            <ButtonLink to={next ? `/leccion/${next.id}` : '/ruta'}>
-              {next ? 'Comenzar lección' : 'Revisar mi ruta'}
+            <ButtonLink to={next ? `/leccion/${next.id}` : '/resultados'}>
+              {next ? 'Comenzar lección' : 'Ver mis resultados'}
             </ButtonLink>
           </section>
           <div className="lower">
@@ -443,93 +443,6 @@ export function Mailbox() {
           ))}
         </div>
       )}
-    </>
-  );
-}
-
-export function Diagnostic() {
-  const { user, run } = useStore();
-  const navigate = useNavigate();
-  const [values, setValues] = useState(
-    user?.diagnostic.length === 4 ? user.diagnostic : [0, 0, 0, 0],
-  );
-  if (!user || user.role !== 'alumno')
-    return <Empty title="El diagnóstico es parte del recorrido del alumno" />;
-  return (
-    <>
-      <Heading title="Tu punto de partida">
-        No hay respuestas buenas o malas. Piensa en cómo te sientes hoy.
-      </Heading>
-      <div className="split">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (
-              run(
-                { type: 'diagnostic', values, goal: getText(e.currentTarget, 'goal') },
-                'Tu punto de partida está guardado',
-              )
-            )
-              navigate('/ruta');
-          }}
-        >
-          {[
-            'Reconozco mis fortalezas y mantengo la confianza al vender.',
-            'Escucho y hago preguntas para entender lo que necesita el cliente.',
-            'Explico cómo mi producto ayuda a resolver una necesidad concreta.',
-            'Me siento cómodo al conversar sobre objeciones y acuerdos.',
-          ].map((q, i) => (
-            <fieldset className="diagnostic-question" key={q}>
-              <legend>
-                {i + 1}. {q}
-              </legend>
-              <div className="rating">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <label key={n}>
-                    <input
-                      type="radio"
-                      name={`q-${i}`}
-                      value={n}
-                      required
-                      checked={values[i] === n}
-                      onChange={() => setValues(values.map((x, j) => (j === i ? n : x)))}
-                    />
-                    <span>{n}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="range-labels">
-                <span>Quiero fortalecerlo</span>
-                <span>Me siento seguro</span>
-              </div>
-            </fieldset>
-          ))}
-          <Area
-            label="¿Qué te gustaría lograr?"
-            name="goal"
-            required
-            minLength={10}
-            maxLength={500}
-            defaultValue={user.goal}
-            placeholder="Quiero aprender a…"
-          />
-          <button className="action" type="submit">
-            Guardar y ver mi ruta
-            <ArrowRight size={18} />
-          </button>
-        </form>
-        <aside className="aside">
-          <img src="/images/progress.webp" alt="" />
-          <h3>Una orientación, no una etiqueta.</h3>
-          <p>
-            La sugerencia local prioriza el área con la puntuación más baja. Tu mentor puede
-            ajustarla contigo.
-          </p>
-          <p className="soft">
-            Esta muestra no utiliza IA ni constituye una evaluación clínica, DISC o PPDC.
-          </p>
-        </aside>
-      </div>
     </>
   );
 }

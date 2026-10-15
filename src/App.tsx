@@ -17,7 +17,6 @@ import {
   Programs,
   Auth,
   Mailbox,
-  Diagnostic,
   Account,
   Purchases,
   Notices,
@@ -27,6 +26,8 @@ import {
 import { RoutePage, LessonPage } from './pages/Learning';
 import { Agenda } from './pages/Agenda';
 import { Consultations } from './pages/Consultations';
+import { Diagnostic, Results, FinalAssessment, SatisfactionPage } from './pages/Development';
+const Reports = lazy(() => import('./pages/Reports'));
 const Mentor = lazy(() => import('./pages/Mentor'));
 const Admin = lazy(() => import('./pages/Admin'));
 
@@ -104,6 +105,7 @@ function Layout() {
     user?.role === 'admin'
       ? [
           ['/', 'Resumen'],
+          ['/admin/resultados', 'Resultados'],
           ['/admin/compras', 'Compras y accesos'],
           ['/admin/personas', 'Personas'],
           ['/admin/contenido', 'Contenido'],
@@ -112,6 +114,7 @@ function Layout() {
       : user?.role === 'mentor'
         ? [
             ['/', 'Mis alumnos'],
+            ['/mentor/resultados', 'Resultados'],
             ['/mentor/entregas', 'Entregas'],
             ['/agenda', 'Agenda'],
             ['/consultas', 'Consultas'],
@@ -120,6 +123,7 @@ function Layout() {
           ? [
               ['/', 'Inicio'],
               ['/ruta', 'Mi ruta'],
+              ['/resultados', 'Mi avance'],
               ['/agenda', 'Agenda'],
               ['/consultas', 'Mi mentor'],
               ['/programas', 'Programas'],
@@ -294,6 +298,9 @@ export default function App() {
         <Route element={<Protected />}>
           <Route path="cuenta" element={<Account />} />
           <Route path="diagnostico" element={<Diagnostic />} />
+          <Route path="resultados" element={<Results />} />
+          <Route path="evaluacion-final" element={<FinalAssessment />} />
+          <Route path="satisfaccion" element={<SatisfactionPage />} />
           <Route path="compras" element={<Purchases />} />
           <Route path="notificaciones" element={<Notices />} />
           <Route path="ruta" element={<RoutePage />} />
@@ -302,9 +309,11 @@ export default function App() {
           <Route path="consultas/:id?" element={<Consultations />} />
         </Route>
         <Route element={<Protected roles={['mentor']} />}>
+          <Route path="mentor/resultados" element={<Reports />} />
           <Route path="mentor/:section?" element={<Mentor />} />
         </Route>
         <Route element={<Protected roles={['admin']} />}>
+          <Route path="admin/resultados" element={<Reports />} />
           <Route path="admin/:section?" element={<Admin />} />
         </Route>
         <Route

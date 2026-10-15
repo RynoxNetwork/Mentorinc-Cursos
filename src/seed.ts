@@ -1,4 +1,4 @@
-import { type AppState, type CourseLesson, now } from './model';
+import { State, type AppState, type CourseLesson, now } from './model';
 
 const topics = [
   [
@@ -260,13 +260,20 @@ export function createSeed(): AppState {
         });
     }
   }
-  return {
-    version: 1,
+  return State.parse({
+    version: 2,
     session: 'maria',
     users: [
       {
         ...base,
         id: 'maria',
+        initialAssessment: {
+          values: [...base.diagnostic],
+          date: now(),
+          source: 'registro',
+          goal: base.goal,
+          reflection: '',
+        },
         name: 'María Torres',
         email: 'maria@example.test',
         role: 'alumno',
@@ -412,5 +419,5 @@ export function createSeed(): AppState {
       },
     ],
     mails: [],
-  };
+  });
 }
