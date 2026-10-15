@@ -1,1 +1,2 @@
-/* /index.html 200
+# Pages serves index.html for client routes when no root 404.html exists.
+# Keep the native SPA fallback; a catch-all rewrite to index.html loops.

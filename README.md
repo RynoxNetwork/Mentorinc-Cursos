@@ -2,7 +2,7 @@
 
 Aplicación de Mentorinc con la dirección visual **Impulso**, aprobada por Jose Maria. Frontend funcional en React, TypeScript y Vite, con identidad, logo e ilustraciones propias del proyecto.
 
-**Demo publicada:** [mentorinc-impulso.pages.dev](https://mentorinc-impulso.pages.dev/). Publicación estática manual; los datos se guardan únicamente en el navegador de cada visitante.
+**Demo con publicación automática:** [mentorinc-cursos.pages.dev](https://mentorinc-cursos.pages.dev/). Cloudflare Pages compila y publica los commits de `main` después de superar las pruebas. Los datos se guardan únicamente en el navegador de cada visitante.
 
 ## Ejecutar
 
@@ -67,8 +67,10 @@ No se interpreta HTML aportado por usuarios. Los enlaces de contenido admiten ú
 
 ## Publicación en Cloudflare Pages
 
-Publicación estática directa del contenido de `dist/`. `_redirects` permite abrir rutas internas, y `_headers` configura las cabeceras del sitio. No se crean Workers de aplicación, bases de datos ni funciones.
+El proyecto `mentorinc-cursos` está conectado a este repositorio. Publica archivos estáticos de `dist/`; `_headers` configura las cabeceras. Las rutas internas usan el soporte SPA nativo de Pages: no añadir un `404.html` en la raíz ni una reescritura global a `/index.html`.
 
-Para una futura integración Git: rama `main`, comando `npm run build`, salida `dist`, raíz `/`, Node `24.18.0`. La integración de GitHub debe tener acceso al repositorio. Los commits en GitHub y los despliegues manuales son operaciones distintas; consultar `docs/ENTREGA.md` para el estado verificado de esta entrega.
+Configuración: rama `main`, comando `npm ci && npm test && npm run build`, salida `dist`, raíz `/`, Node `24.18.0` y `SKIP_DEPENDENCY_INSTALL=1`. No requiere secretos de aplicación, Workers, bases de datos ni funciones. Consultar `docs/DESPLIEGUE.md` para la operación y `docs/ENTREGA.md` para la evidencia.
+
+La demo anterior [mentorinc-impulso.pages.dev](https://mentorinc-impulso.pages.dev/) se conserva como publicación manual histórica. Los datos locales de esa dirección no se trasladan automáticamente a la nueva.
 
 Fuentes técnicas: [Vite](https://vite.dev/guide/), [React](https://react.dev/learn/build-a-react-app-from-scratch), [Cloudflare Pages para React](https://developers.cloudflare.com/pages/framework-guides/deploy-a-react-site/).

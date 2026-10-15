@@ -33,7 +33,7 @@ Se mantiene el historial inicial de `RynoxNetwork/Mentorinc-Cursos` y su rama `m
 
 No se presentan estas pruebas como evidencia de cobros, correo real, autorización de servidor o funcionamiento multiusuario.
 
-## Publicación verificada
+## Publicación manual inicial verificada
 
 - URL principal: <https://mentorinc-impulso.pages.dev/>.
 - Versión de aplicación: commit `2a93e66`, posterior a la implementación `0639ab3`, ambos subidos a `main`.
@@ -45,9 +45,18 @@ No se presentan estas pruebas como evidencia de cobros, correo real, autorizaci�
 - Navegador público: completar lección → recargar su URL directa → estado completado persistido → inicio con progreso 33%. Sin errores ni advertencias de consola en este recorrido.
 - Inicio público a 390 px: scrollWidth y ancho de contenido 375 px, sin desbordamiento. Menú de cuenta abre y Escape lo cierra; se retiró la emulación al terminar.
 
-El proyecto no tiene integración Git automática: el conector existente de Cloudflare no mostraba este repositorio. Se publicó el paquete estático autorizado sin ampliar permisos del conector. Un `git push` conserva el código, pero no cambia por sí solo la demo. Para actualizarla, compilar y subir el contenido de `dist/` al mismo proyecto; conservar el ZIP anterior para volver a esa versión si fuera necesario.
+Esta primera publicación se hizo por carga directa, antes de autorizar el repositorio en la aplicación de Cloudflare. `mentorinc-impulso` conserva esa versión histórica; los nuevos commits se publican en el proyecto Git descrito a continuación.
 
 Las capturas de escritorio y móvil y el manifiesto de comprobación quedan en la carpeta local de entrega; no contienen datos reales de alumnos. El commit posterior de documentación no cambia los archivos desplegados.
+
+## Integración Git y nueva publicación
+
+- Proyecto `mentorinc-cursos`, conectado a `RynoxNetwork/Mentorinc-Cursos`, rama de producción `main`, despliegues automáticos activados.
+- URL: <https://mentorinc-cursos.pages.dev/>. La aplicación sigue siendo estática y local; la conexión Git no incorpora servicios de backend.
+- Primer despliegue: `e41aaae2-d425-488c-ab64-1a0c55b88156`, commit `3911401a5c4c7fd73473642d32842fc735746aef`, estado `success`, 14 de octubre de 2026 a las 20:43 (Lima), duración 33 s.
+- El log confirma Node `24.18.0`, instalación con `npm ci`, 22 pruebas aprobadas, comprobación TypeScript y compilación Vite. No se detectó directorio de funciones.
+- Se ajusta la regla de rutas global que Cloudflare ignoraba por bucle, utilizando su soporte SPA nativo. La configuración completa está en `docs/DESPLIEGUE.md`.
+- Los datos guardados en el origen anterior permanecen allí: la nueva URL tiene su propio almacenamiento local.
 
 ## Pendientes de contenido y etapa posterior
 
