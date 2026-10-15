@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LearningHistory } from './Experience';
 import { Download } from 'lucide-react';
 import { useStore } from '../store';
 import { dateLabel, progress } from '../model';
@@ -102,7 +103,8 @@ export default function Reports() {
               ? `Periodo: ${from || 'sin inicio'} a ${to || 'sin fin'}.`
               : 'Periodo: todo el historial.'}{' '}
             El filtro usa la fecha de evaluación final, la última actualización de la encuesta y la
-            fecha programada de la sesión. Las fichas individuales conservan el historial completo.
+            fecha programada de la sesión. Comparación y satisfacción resumen el recorrido actual;
+            las fichas también permiten consultar recorridos anteriores.
           </p>
           <div className="overview results-overview">
             <div>
@@ -172,9 +174,9 @@ export default function Reports() {
                 {summary.mentoringResponses}.
               </p>
               <p className="support-note">
-                Alumnos con evaluación final en todo el historial: {summary.eligible.length}. Con
+                Alumnos con evaluación final en su recorrido actual: {summary.eligible.length}. Con
                 encuesta: {summary.eligible.filter((u) => u.satisfaction).length}. Se cuenta la
-                última respuesta de cada alumno. Sin respuestas se muestra «—».
+                última respuesta del recorrido actual de cada alumno. Sin respuestas se muestra «—».
               </p>
             </section>
           </div>
@@ -241,6 +243,7 @@ export default function Reports() {
                   <Comparison user={student} />
                   <div>
                     <ContextSummary user={student} />
+                    <LearningHistory userId={student.id} />
                     <section className="reflection">
                       <h3>Su opinión</h3>
                       {student.satisfaction ? (

@@ -12,6 +12,7 @@ import {
 } from '../model';
 import { Heading, Badge, Field, Area, Select, Avatar, Empty, getText } from '../ui';
 import { Comparison, ContextSummary } from '../measurement-ui';
+import { LearningHistory } from './Experience';
 
 export default function Mentor() {
   const { state, user } = useStore();
@@ -159,6 +160,7 @@ function StudentDetail({ id }: { id: string }) {
       <p>{u.goal || 'Todavía no ha definido su objetivo.'}</p>
       <ContextSummary user={u} />
       <Comparison user={u} />
+      <LearningHistory userId={u.id} />
       <form
         onSubmit={(e) => {
           e.preventDefault();

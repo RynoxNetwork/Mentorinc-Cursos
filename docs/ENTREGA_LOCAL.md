@@ -12,7 +12,7 @@ Fichas y temarios diferenciados; continuidad de la selección durante el alta; c
 - Se mantiene almacenamiento anterior a la versión 3: María conserva sus 15 lecciones y su cierre. Las compras nuevas respetan el temario configurado.
 - En navegador se configuró un programa ficticio de tres lecciones con revisión obligatoria. Alumna nueva: catálogo → registro → confirmación → programa conservado → inscripción → pago simulado → aprobación → diagnóstico → intentos incorrecto/correcto → tres entregas → ajustes → reentrega → aprobación → cierre → satisfacción.
 - El cierre permaneció bloqueado mientras faltaba revisión, pese al 100% de lecciones. Tras aprobar la última actividad se habilitó. Comparación inicial 2/5 y final 4/5 conservada; satisfacción sin mentoría realizada no pide esa valoración.
-- Reentrega conserva el texto, feedback y nota anteriores. Mentor ve contexto, casos y puede iniciar la conversación.
+- Reentrega conserva el texto, feedback y nota anteriores. Mentor ve contexto, casos y puede iniciar la conversación. Mentor y administración también pueden consultar recorridos archivados; la vista se comprobó con una copia ficticia preparada para ese caso, sin incorporarla a los datos públicos.
 - Caso con resultado 6/6, edición posterior del feedback y reintento 0/6: dos intentos con resultados propios; el anterior conserva su feedback original y el total permanece en 50 puntos (tres lecciones y un caso).
 - Solicitud de reclamo ficticia antes del pago → referencia y responsable → constancia descargada → respuesta administrativa → cierre → reapertura por alumna con historial visible.
 - Política v1 → nuevo borrador v2; aceptaciones previas siguen referenciando v1. La vista pública muestra v2 como borrador.

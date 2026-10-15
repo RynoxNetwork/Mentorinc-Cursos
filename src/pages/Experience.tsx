@@ -394,8 +394,9 @@ export function Recognition({ userId }: { userId?: string }) {
     </section>
   );
 }
-export function LearningHistory() {
-  const { state, user } = useStore();
+export function LearningHistory({ userId }: { userId?: string }) {
+  const { state, user: currentUser } = useStore();
+  const user = userId ? state.users.find((u) => u.id === userId) : currentUser;
   if (!user?.history?.length) return null;
   return (
     <section className="section-spaced">
