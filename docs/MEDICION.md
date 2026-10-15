@@ -6,11 +6,11 @@ Implementación del 14 de octubre de 2026, manteniendo la dirección visual Impu
 
 1. Confirmar el correo local y abrir **Tu punto de partida**. Registrar experiencia (cuatro tramos), contexto de venta, estilo descrito por el alumno, objetivo y cuatro escalas orientativas de 1 a 5.
 2. Guardar la medición inicial una sola vez. **Mi contexto** permite actualizar experiencia, contexto, estilo y objetivo actual; conserva las respuestas, fecha y objetivo del inicio, y no reemplaza el foco ajustado por el mentor.
-3. **Mi avance** muestra la comparación y el saldo de mentoría. Con pago confirmado, acceso aprobado y todas las lecciones publicadas completas, se habilita la evaluación final. No se usa el porcentaje redondeado para habilitarla; una ruta sin lecciones no permite cerrar.
+3. **Mi avance** muestra la comparación y el saldo de mentoría. Con pago confirmado, acceso aprobado y todas las lecciones publicadas de la inscripción completas y las actividades aprobadas si el contrato lo exige, se habilita la evaluación final. No se usa el porcentaje redondeado para habilitarla; una ruta sin lecciones no permite cerrar.
 4. Responder las mismas cuatro preguntas y una reflexión. La evaluación final se guarda una vez; admite puntuaciones iguales o menores. No altera las respuestas iniciales ni las actividades, notas o feedback del mentor.
 5. Completar satisfacción general y utilidad del aprendizaje (1–5), con comentario opcional. Valorar mentoría solo si existe al menos una sesión realizada. La respuesta es identificada, visible para mentor y administración. Se puede corregir: conserva su fecha de creación, actualiza la de modificación y sigue contando como una respuesta.
 
-La medición y encuesta corresponden al recorrido del alumno, no a cada compra. Las cuentas de muestra no incluyen encuestas ni evaluaciones finales fabricadas. No presentar estas escalas como instrumento psicológico validado ni como una evaluación de desempeño comercial.
+La medición y encuesta corresponden al recorrido actual del alumno, asociado a su inscripción. Aprobar una nueva inscripción archiva el recorrido anterior y reinicia progreso, mediciones y encuesta. Mi avance permite consultar ese historial; los indicadores agregados de comparación y satisfacción consideran el recorrido actual. Las cuentas de muestra no incluyen encuestas ni evaluaciones finales fabricadas. No presentar estas escalas como instrumento psicológico validado ni como una evaluación de desempeño comercial.
 
 ## Resultados del equipo
 
@@ -38,11 +38,11 @@ Las fechas son inclusivas y usan America/Lima. Sin fechas, se considera todo el 
 
 ## Conservación de datos
 
-Se mantiene la clave `mentorinc.impulso.v1` para encontrar los navegadores existentes; el documento guardado usa `version: 2`. Al leer una versión 1 válida, se preservan usuarios, sesión, compras, progreso, entregas, mensajes y reservas. El último diagnóstico de cuatro valores se copia a la medición inicial con `source: anterior` y `date: null`. La interfaz explica que no puede reconstruir la fecha ni respuestas previas que la versión anterior hubiera reemplazado.
+Se mantiene la clave `mentorinc.impulso.v1` para encontrar los navegadores existentes; el documento guardado usa `version: 3`. Al leer una versión 1 válida, se preservan usuarios, sesión, compras, progreso, entregas, mensajes y reservas. El último diagnóstico de cuatro valores se copia a la medición inicial con `source: anterior` y `date: null`. La interfaz explica que no puede reconstruir la fecha ni respuestas previas que la versión anterior hubiera reemplazado.
 
 La migración es idempotente y se guarda con la siguiente operación del usuario. Datos corruptos o de versiones desconocidas conservan el bloqueo de escritura y la opción de exportar el original antes de restablecer. Los datos de las pruebas visuales no se incorporan al código ni a la demo de otros visitantes.
 
-## Comprobaciones realizadas
+## Comprobaciones de la entrega anterior (medición)
 
 - 32 pruebas aprobadas (22 previas y 10 nuevas): migración sin pérdida, inicio conservado, requisitos del cierre, permisos locales, encuesta única, cálculos con reprogramación/cancelación/asistencia/reembolso, fechas de Lima y protección de CSV.
 - TypeScript y compilación estática correctos.
@@ -51,3 +51,9 @@ La migración es idempotente y se guarda con la siguiente operación del usuario
 - Alta ficticia nueva → confirmación local → onboarding ampliado → medición inicial fechada → recarga con datos conservados.
 - Mentor y administración: ficha de la alumna, contexto y opinión; filtro sin resultados, selección sin mentor, exportación deshabilitada sin alumnos y descarga CSV con valores coincidentes.
 - Inspección visual de escritorio y móvil; onboarding y reportes cerrados/abiertos a 320 px sin desbordamiento horizontal. La verificación pública se realiza después del push mediante el check de Cloudflare y las rutas afectadas.
+
+## Ampliación de operación local
+
+Las compras de las versiones 1 y 2 conservan el temario previo; no se acortan al migrar. Las nuevas compras guardan temario y reglas del programa elegido. Los cupos vigentes excluyen también compras vencidas. La activación del resumen administrativo cuenta alumnos con acceso vigente y al menos una lección completada. La fecha de primera lección solo se conoce desde esta versión; no se inventa para datos anteriores.
+
+Ver la evidencia adicional y el recorrido verificado en [ENTREGA_LOCAL.md](ENTREGA_LOCAL.md).
