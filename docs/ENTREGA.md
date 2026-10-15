@@ -56,6 +56,8 @@ Las capturas de escritorio y móvil y el manifiesto de comprobación quedan en l
 - Primer despliegue: `e41aaae2-d425-488c-ab64-1a0c55b88156`, commit `3911401a5c4c7fd73473642d32842fc735746aef`, estado `success`, 14 de octubre de 2026 a las 20:43 (Lima), duración 33 s.
 - El log confirma Node `24.18.0`, instalación con `npm ci`, 22 pruebas aprobadas, comprobación TypeScript y compilación Vite. No se detectó directorio de funciones.
 - Se ajusta la regla de rutas global que Cloudflare ignoraba por bucle, utilizando su soporte SPA nativo. La configuración completa está en `docs/DESPLIEGUE.md`.
+- Prueba de automatización: el push de `2820a1d9fddea0f0928416a55987f6480ba1ca57` disparó el despliegue `3a8618a3-3a14-4c7c-8368-4ec5920b07e5` sin carga manual. Finalizó en `success` a las 20:45 (Lima), con 22 pruebas aprobadas, TypeScript/build correctos y sin la advertencia de redirección. GitHub informa el check `Cloudflare Pages` como `completed / success` para ese mismo SHA.
+- Nueva URL pública: HTTP 200 y cabeceras configuradas presentes. `/` y `/leccion/com-2` sirven el mismo HTML que el build local (SHA-256 `126c72393dab56012918eefbaec0681add2ac1f2d19c2ba997d50fa4ccc17697`). La lección abre tras recargar su URL directa; sin errores ni advertencias de consola en esta comprobación.
 - Los datos guardados en el origen anterior permanecen allí: la nueva URL tiene su propio almacenamiento local.
 
 ## Pendientes de contenido y etapa posterior
